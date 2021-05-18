@@ -3,7 +3,7 @@
 The RFC process here is inspired by [that of the Rust programming
 language](https://github.com/rust-lang/rfcs).
 
-The process is intended to provide TRC team members a venue in which to propose substantial
+The process is intended to provide CTD team members a venue in which to propose substantial
 technical changes and refactors to this application. The RFC will be reviewed and merged as either
 accepted, meaning we commit to working on it at some point in the future, or rejected. The RFCs will
 remain in the repository and be a source of historical information for anyone looking back for
@@ -22,18 +22,18 @@ first.
 
 ## When you need to follow this process
 
-You never *need* to follow this process. In general, the tech lead is responsible for ensuring the
+You never _need_ to follow this process. In general, the tech lead is responsible for ensuring the
 application is well architected, tested, performant, and functional, subject to organizational
 constraints. However, this process is available to you if you have a good idea for how something
 should change. Such changes may include:
 
-* A substantial refactor, which takes a developer roughly an entire sprint or more.
-* Public facing changes, which might need to be coordinated with other groups inside or outside of
+- A substantial refactor, which takes a developer roughly an entire sprint or more.
+- Public facing changes, which might need to be coordinated with other groups inside or outside of
   CTD.
 
 Changes that don't need an RFC may be:
 
-* Smaller changes, which can use the normal inbound Asana flow.
+- Smaller changes, which can use the normal inbound Asana flow.
 
 When in doubt, feel free to ask!
 
@@ -56,35 +56,39 @@ of it), it may be possible to allot sprint time to it. Submit an inbound Asana t
 reviewed and prioritized by the tech lead and product manager according to the road map and team
 priorities.
 
+For large changes, it's worth drafting and getting feedback on an RFC even before formally proposing
+it. A fresh set of eyes may be able to quickly identify and resolve some issues before it's shared
+with the wider organization, making the discussion of the formal proposal that much more productive.
+
 ## What the process is
 
-* Copy `rfcs/0000-template.md` to `rfcs/0000-my-feature.md` (where "my-feature" is descriptive).
+- Copy `rfcs/0000-template.md` to `rfcs/0000-my-feature.md` (where "my-feature" is descriptive).
   Don't assign an RFC number yet; This is going to be the PR number and we'll rename the file
   accordingly if the RFC is accepted.
-* Fill in the RFC. Put care into the details: RFCs that do not present convincing motivation,
+- Fill in the RFC. Put care into the details: RFCs that do not present convincing motivation,
   demonstrate lack of understanding of the design's impact, or are disingenuous about the drawbacks
   or alternatives tend to be poorly-received.
-* Submit a pull request. As a pull request the RFC will receive design feedback from the team, and
+- Submit a pull request. As a pull request the RFC will receive design feedback from the team, and
   the author should be prepared to revise it in response.
-* Now that your RFC has an open pull request, use the issue number of the PR to update your 0000-
+- Now that your RFC has an open pull request, use the issue number of the PR to update your 0000-
   prefix to that number.
-* Assign the RFC to the tech lead, and announce it in the Slack channel for all the team to review.
-* RFCs rarely go through this process unchanged, especially as alternatives and drawbacks are shown.
+- Assign the RFC to the tech lead, and announce it in the Slack channel for all the team to review.
+- RFCs rarely go through this process unchanged, especially as alternatives and drawbacks are shown.
   You can make edits, big and small, to the RFC to clarify or change the design, but make changes as
   new commits to the pull request, and leave a comment on the pull request explaining your changes.
   Specifically, do not squash or rebase commits after they are visible on the pull request.
-* At some point, the tech lead will propose a "motion for final comment period" (FCP), along with a
+- At some point, the tech lead will propose a "motion for final comment period" (FCP), along with a
   disposition for the RFC (accept or reject).
-    * This step is taken when enough of the tradeoffs have been discussed that the tech lead is in a
-      position to make a decision. That does not require consensus amongst all participants in the
-      RFC thread (which is usually impossible). However, the argument supporting the disposition on
-      the RFC needs to have already been clearly articulated, and there should not be a strong
-      consensus against that position outside of the tech lead. The tech lead will use their best
-      judgment in taking this step, and the FCP itself ensures there is ample time and notification
-      for stakeholders to push back if it is made prematurely.
-    * For RFCs with lengthy discussion, the motion to FCP is usually preceded by a summary comment
-      trying to lay out the current state of the discussion and major tradeoffs/points of
-      disagreement.
+  - This step is taken when enough of the tradeoffs have been discussed that the tech lead is in a
+    position to make a decision. That does not require consensus amongst all participants in the
+    RFC thread (which is usually impossible). However, the argument supporting the disposition on
+    the RFC needs to have already been clearly articulated, and there should not be a strong
+    consensus against that position outside of the tech lead. The tech lead will use their best
+    judgment in taking this step, and the FCP itself ensures there is ample time and notification
+    for stakeholders to push back if it is made prematurely.
+  - For RFCs with lengthy discussion, the motion to FCP is usually preceded by a summary comment
+    trying to lay out the current state of the discussion and major tradeoffs/points of
+    disagreement.
 
 ## The RFC life-cycle
 
