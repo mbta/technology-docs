@@ -1,6 +1,6 @@
 - Feature Name: socket-proxy-ocs-cloudevents 
 - Start Date: 2021-05-19
-- RFC PR: [mbta/technology-docs#0000](https://github.com/mbta/technology-docs/pull/0000)
+- RFC PR: [mbta/technology-docs#0004](https://github.com/mbta/technology-docs/pull/4)
 - Asana task: [Secure connection between socket_proxy and rtr](https://app.asana.com/0/881264583703207/1200290609745412/f)
 - Status: Proposed
 
