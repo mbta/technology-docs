@@ -20,6 +20,7 @@ several issues we are trying to address:
   restart/redeploy) when a message comes in, that message is lost
 - unreliable: if the production RTR instance isn't running, then the log of
   messages written to S3 (and used by OPMI) will not have those messages
+- wasteful: we send each message four separate times to four RTR instances
 - missing metadata: the messages do not include the date they were sent, or
   the time the messages were received by SocketProxy 
 
@@ -81,7 +82,7 @@ SOCKET_PROXY_LISTEN_PORT=8000 SOCKET_PROXY_KINESIS_STREAM=ctd-ocs-raw-messages m
 
 The maximum size of a record (including the partition key) is 1MB, and record
 storage is charged in units of 25KB. Each shard supports writing 1MB or 1000
-records per second For reading, each shard can support 5 read transactions
+records per second for reading, each shard can support 5 read transactionsa
 per second, and up to 10,000 records per transaction, up to a total of 2MB
 per second. One (1) shard should be sufficient, but we will provision two (2)
 shards. While one shard should be sufficient, having multiple shards ensures
@@ -101,7 +102,8 @@ This leads to a few possibilities for managing the state of the stream in RTR.
    continue from the last message it received.
 3. [encouraged] Using the Kinesis Client Library (KCL) to maintain the
    current sequence number in DynamoDB. While KCL is a Java application, the
-   Multi-Lang Daemon provides access to other languages include Elixir.
+   Multi-Lang Daemon provides access to other languages include Elixir. There
+   is also a pure-Elixir implementation.
 4. [potentially easier, more expensive] RTR stops maintaining state, and
    starts reading the Kinesis stream from the start of service whenever it
    starts. This would require increasing the default Kinesis storage above
@@ -128,8 +130,11 @@ https://github.com/mbta/schemas/blob/HEAD/com.mbta.ocs.raw-message.schema.json
 ## Further Documentation
 
 - Kinesis high-level overview: https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
+- Kinesis API reference: https://docs.aws.amazon.com/kinesis/latest/APIReference/Welcome.html
+- `ex_aws_kinesis` (ExAws interface to the Kinesis API): https://docs.aws.amazon.com/kinesis/latest/APIReference/Welcome.html
 - Kinesis Client Library (KCL): https://docs.aws.amazon.com/streams/latest/dev/shared-throughput-kcl-consumers.html
 - Elixir Multi-Lang Daemon interface: https://github.com/AdRoll/exmld
+- `kcl_ex` (native Elixir KCL implementation): https://github.com/uberbrodt/kcl_ex
 - JSON Schema: https://jsonschema.org
 
 # Drawbacks
@@ -149,7 +154,7 @@ data into a local instance for testing.
 - What other designs have been considered and what is the rationale for not choosing them?
 - What is the impact of not doing this? -->
 
-AWS has tools to proxy messages from Kinesis into Kafka (and vis versa) so if
+AWS has tools to proxy messages from Kinesis into Kafka (and vice versa) so if
 we need to migrate in the future that is possible. If we had a lot more
 operational staff (or more experience with Kafka) this might point to a
 different decision, but I believe that Kinesis gets us the value we need with
