@@ -1,6 +1,6 @@
 - Feature Name: gtfs_canonical_routes
 - Start Date: 2021-06-03
-- RFC PR: [mbta/technology-docs#0000](https://github.com/mbta/technology-docs/pull/0000)
+- RFC PR: [mbta/technology-docs#0006](https://github.com/mbta/technology-docs/pull/0006)
 - Asana task: [asana link](https://app.asana.com/)
 - Status: Proposed
 
