@@ -142,6 +142,14 @@ Similarly to how we're currently standardized on GTFS-RT Enhanced for communicat
 - I expect that the specific implementation of state management will be resolved during development, rather than as a part of this RFC.
 - Some of the specific names (the name of the CloudEvent message, the name of the Kinesis stream) may change, either based on RFC feedback or during development.
 
+## Batching
+There are options for batching messages into a single Kinesis record, which could potentially increase throughput at the cost of some additional complexity.
+
+- a new CloudEvent message type like `com.mbta.ocs.raw-message-batch`
+- the Kinesis Producer Library (KPL) provides a Protobuf-based format for batching, which is also understood by the KCL
+
+For example, during the TSCH load in the morning, the peak traffic is ~400 messages/s. If we batched them even at 1 second granularity, that would reduce the number of messages dramatically.
+
 # Future possibilities
 
 <!-- Think about what the natural extension and evolution of your proposal would be and how it would affect the project as a whole in a holistic way. Try to use this section as a tool to more fully consider all possible interactions with the project in your proposal. Also consider how this all fits into the roadmap for the project.
