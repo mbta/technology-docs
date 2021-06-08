@@ -33,7 +33,7 @@ route pattern, for which it is the representative trip, and a shape, and the rou
 considered "typical" for the route. If current service has trips following the same route pattern,
 they will use the canonical route pattern as well.
 
-In short, for consumers of the feed, a route pattern has typicality of `0` if and only if it visits
+In short, for consumers of the feed, a route pattern has typicality of `1` if and only if it visits
 a set of canonical stops in a canonical order.
 
 # Reference-level explanation
@@ -101,8 +101,8 @@ applicable, or not.
 # Future possibilities
 
 We could expose this more clearly in the API. In the approach outlined here, the "canonical" route
-pattern is simply that with a typicality of `0`. In the alternative approach, the typicality would
-be `4`. That's not currently filterable in the API. In addition, the `service` can't be filtered by
+pattern is simply that with a typicality of `1`. In the alternative approach, the typicality would
+be `5`. That's not currently filterable in the API. In addition, the `service` can't be filtered by
 its typicality, most relevantly when included with `trips`.
 
 Shoudl we do something similar for ferry and/or bus?
