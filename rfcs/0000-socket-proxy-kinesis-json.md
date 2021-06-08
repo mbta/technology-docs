@@ -26,8 +26,8 @@ several issues we are trying to address:
 
 To address these issues, we'll update SocketProxy to write the OCS messages
 (along with additional metadata) as JSON CloudEvent messages to an AWS
-Kinesis stream. The partition key will be based on the type of message and
-the line.
+Kinesis stream. The partition key will be based on the source `host:port`
+address.
 
 # Guide-level explanation
 
@@ -49,9 +49,10 @@ In this case, SocketProxy will be the producer. For each message received
 from the OCS, it will transform that message into a CloudEvent (see [RFC
 4](https://github.com/mbta/technology-docs/pull/4)), encode the event as
 JSON, and put a record in the "ctd-raw-ocs-messages" stream. The
-"ctd-raw-ocs-messages" stream will be configured with two (2) shards. In
-order that train movement messages are processed in the correct order, the
-partition key will be based on the type of OCS message and the line.
+"ctd-raw-ocs-messages" stream will be configured with one (1) shard. In order
+that train movement messages are processed in the correct order, the
+partition key will be based on the source `host:port` values. This ensures
+that all messages from a given connection are kept in order.
 
 The four (4) RTR instances will be consumers of the stream. Instead of
 expecting messages on TCP sockets, they will read the CloudEvent JSON payload
@@ -82,11 +83,11 @@ SOCKET_PROXY_LISTEN_PORT=8000 SOCKET_PROXY_KINESIS_STREAM=ctd-ocs-raw-messages m
 
 The maximum size of a record (including the partition key) is 1MB, and record
 storage is charged in units of 25KB. Each shard supports writing 1MB or 1000
-records per second for reading, each shard can support 5 read transactionsa
+records per second for reading, each shard can support 5 read transactions
 per second, and up to 10,000 records per transaction, up to a total of 2MB
-per second. One (1) shard should be sufficient, but we will provision two (2)
-shards. While one shard should be sufficient, having multiple shards ensures
-that consumers properly handle multiple shards from the start.
+per second. Kinesis also provides Enhanced Fan-out consumers, which each
+receive a dedicated 2MB per second. This is recommended for streams with more
+than 2 consumers, as RTR will be.
 
 By default, records are kept for 24 hours. This can be extended up to 7 days
 for an extended data retention stream, and 365 days for a long-term data
@@ -103,7 +104,10 @@ This leads to a few possibilities for managing the state of the stream in RTR.
 3. [encouraged] Using the Kinesis Client Library (KCL) to maintain the
    current sequence number in DynamoDB. While KCL is a Java application, the
    Multi-Lang Daemon provides access to other languages include Elixir. There
-   is also a pure-Elixir implementation.
+   is also a pure-Elixir implementation. KCL provides functionality on top of
+   the Kinesis and DynamoDB APIs: shard leases (so only one application
+   instance is reading from a shard) and checkpointing (so the application
+   knows which messages have been seen).
 4. [potentially easier, more expensive] RTR stops maintaining state, and
    starts reading the Kinesis stream from the start of service whenever it
    starts. This would require increasing the default Kinesis storage above
@@ -131,6 +135,7 @@ https://github.com/mbta/schemas/blob/HEAD/com.mbta.ocs.raw-message.schema.json
 
 - Kinesis high-level overview: https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
 - Kinesis API reference: https://docs.aws.amazon.com/kinesis/latest/APIReference/Welcome.html
+- Kinesis Enhanced Fan-out Consumer: https://docs.aws.amazon.com/streams/latest/dev/building-enhanced-consumers-api.html
 - `ex_aws_kinesis` (ExAws interface to the Kinesis API): https://docs.aws.amazon.com/kinesis/latest/APIReference/Welcome.html
 - Kinesis Client Library (KCL): https://docs.aws.amazon.com/streams/latest/dev/shared-throughput-kcl-consumers.html
 - Elixir Multi-Lang Daemon interface: https://github.com/AdRoll/exmld
@@ -143,10 +148,16 @@ Kinesis is a new technology that we're adding to our infrastructure. Even
 though it's mostly managed by Amazon, we'll need to develop some in-house
 expertise with building producers and consumers.
 
+Enhanced fan-out consumers are not well-supported by the existing
+Elixir/Erlang Kinesis adapters. The functionality does work (Paul Swartz was
+able to get it working during proof-of-concept testing) but we'll need to
+write some of our own code to support the functionality.
+
 Running Kinesis locally is easy enough with tools like LocalStack or
 Kinesialite, but more involved than running a TCP proxy. This might require
 some re-working of how the RTR integration system works when pushing logged
-data into a local instance for testing.
+data into a local instance for testing. Kinesialite doesn't support enhanced
+fan-out, so we'd need to support both models in our code.
 
 # Rationale and alternatives
 
@@ -252,7 +263,9 @@ complexity.
 
 For example, during the TSCH load in the morning, the peak traffic is ~400
 messages/s. If we batched them even at 1 second granularity, that would
-reduce the number of messages dramatically.
+reduce the number of messages dramatically. Not all messages would need to be
+batched. For example, we could batch TSCH messages but not TMOV messages as a
+way to balance message size with latency.
 
 # Future possibilities
 
