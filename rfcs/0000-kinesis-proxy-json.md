@@ -1,4 +1,4 @@
-- Feature Name: socket-proxy-kinesis-json
+- Feature Name: kinesis-proxy-json
 - Start Date: 2021-06-02
 - RFC PR: mbta/technology-docs#0000
 - Asana task: [Secure connection between socket_proxy and rtr](https://app.asana.com/0/881264583703207/1200290609745412/f)
@@ -24,7 +24,7 @@ several issues we are trying to address:
 - missing metadata: the messages do not include the date they were sent, or
   the time the messages were received by SocketProxy 
 
-To address these issues, we'll update SocketProxy to write the OCS messages
+To address these issues, we'll create a KinesisProxy to write the OCS messages
 (along with additional metadata) as JSON CloudEvent messages to an AWS
 Kinesis stream. The partition key will be based on the source `host:port`
 address.
@@ -45,9 +45,9 @@ identifies the record within the shard. It also orders the messages: messages
 within a shard have a defined order, but not messages received by two
 different shards.
 
-In this case, SocketProxy will be the producer. For each message received
-from the OCS, it will transform that message into a CloudEvent (see [RFC
-4](https://github.com/mbta/technology-docs/pull/4)), encode the event as
+In this case, a new KinesisProxy will be the producer. For each message
+received from the OCS, it will transform that message into a CloudEvent (see
+[RFC 4](https://github.com/mbta/technology-docs/pull/4)), encode the event as
 JSON, and put a record in the "ctd-raw-ocs-messages" stream. The
 "ctd-raw-ocs-messages" stream will be configured with one (1) shard. In order
 that train movement messages are processed in the correct order, the
@@ -74,12 +74,15 @@ detailed proposal makes those examples work. -->
 Currently, SocketProxy has a Receiver GenServer responsible for each incoming
 connection from OCS. Receiver then spawns a Forwarder GenServer to send the
 data to each of the destinations (currently, the four RTR instances). After
-this RFC, SocketProxy will have a KinesisReceiver which is responsible for
+this RFC, a new KinesisProxy which is responsible for
 writing records to a configured Kinesis stream:
 
 ```
-SOCKET_PROXY_LISTEN_PORT=8000 SOCKET_PROXY_KINESIS_STREAM=ctd-ocs-raw-messages mix run --no-halt
+KINESIS_PROXY_LISTEN_PORT=8001 KINESIS_PROXY_STREAM=ctd-ocs-raw-messages mix run --no-halt
 ```
+
+SocketProxy will be configured to add `127.0.0.1:8001` as a destination, but
+otherwise will not be changed.
 
 The maximum size of a record (including the partition key) is 1MB, and record
 storage is charged in units of 25KB. Each shard supports writing 1MB or 1000
@@ -114,10 +117,17 @@ This leads to a few possibilities for managing the state of the stream in RTR.
    the default of 24 hours, and absorbing some additional cost to use
    extended data retention.
 
-SocketProxy will write JSON-encoded CloudEvents to the Kinesis
+KinesisProxy will write JSON-encoded CloudEvents to the Kinesis
 stream. JSON-encoded CloudEvents are somewhat larger than a binary encoding,
 but still easily fit within the limits of a Kinesis record. They are also
 human-readable, aiding in debugging.
+
+The partition key will be a hash of the TCP source `host:port`, along with a
+random salt. The random salt is to ensure that it's not possible to go from
+the partition key back to the `host:port` combination. By using this hash as
+the partition key, we ensure that all messages coming from a given TCP
+connection are routed to the same shard, ensuring that they are stored in the
+order that they are received.
 
 To ensure that the format of the JSON messages are documented, a JSON Schema
 document will be added to a new repository: mbta/schemas. By documenting them
