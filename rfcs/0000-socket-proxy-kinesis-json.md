@@ -257,15 +257,17 @@ There are options for batching messages into a single Kinesis record, which
 could potentially increase throughput at the cost of some additional
 complexity.
 
-- a new CloudEvent message type like `com.mbta.ocs.raw-message-batch`
+- a CloudEvent message type like `com.mbta.ocs.raw-message-batch`
 - the Kinesis Producer Library (KPL) provides a Protobuf-based format for
   batching, which is also understood by the KCL
 
 For example, during the TSCH load in the morning, the peak traffic is ~400
 messages/s. If we batched them even at 1 second granularity, that would
-reduce the number of messages dramatically. Not all messages would need to be
-batched. For example, we could batch TSCH messages but not TMOV messages as a
-way to balance message size with latency.
+reduce the number of messages. Not all messages would need to be batched. For
+example, we could batch TSCH messages but not TMOV messages as a way to
+balance message size with latency. Experimentally, batching non-TMOV messages
+as a JSON CloudEvent every second reduced the number of messages by 25%, the
+amount of data by 6%, and the peak rate to less than 25 messages/second.
 
 # Future possibilities
 
