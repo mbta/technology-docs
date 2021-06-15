@@ -10,7 +10,7 @@ Send OCS messages as JSON-formatted CloudEvents to AWS Kinesis
 
 # Motivation
 
-Currently, SocketProxy proxies OCS message to each RTR instance running in
+Currently, SocketProxy proxies OCS messages to each RTR instance running in
 AWS. This method of sending Occupancy Control System (OCS) messages has
 several issues we are trying to address:
 
@@ -24,10 +24,10 @@ several issues we are trying to address:
 - missing metadata: the messages do not include the date they were sent, or
   the time the messages were received by SocketProxy 
 
-To address these issues, we'll create a KinesisProxy to write the OCS messages
-(along with additional metadata) as JSON CloudEvent messages to an AWS
-Kinesis stream. The partition key will be based on the source `host:port`
-address.
+To address these issues, we'll create KinesisProxy, a new Elixir application,
+to write the OCS messages (along with additional metadata) as JSON CloudEvent
+messages to an AWS Kinesis stream. The partition key will be based on the
+source `host:port` address.
 
 # Guide-level explanation
 
@@ -115,7 +115,9 @@ This leads to a few possibilities for managing the state of the stream in RTR.
    starts reading the Kinesis stream from the start of service whenever it
    starts. This would require increasing the default Kinesis storage above
    the default of 24 hours, and absorbing some additional cost to use
-   extended data retention.
+   extended data retention. (While the start of service is never more than 24
+   hours in the past, the time when we received TSCH messages may have been
+   in some rare cases and we do not want to lose them.)
 
 KinesisProxy will write JSON-encoded CloudEvents to the Kinesis
 stream. JSON-encoded CloudEvents are somewhat larger than a binary encoding,
@@ -140,6 +142,17 @@ registry:
 the message to the schema, for validation or other processing For example,
 the schema for the "com.mbta.ocs.raw-message" schema could live at
 https://github.com/mbta/schemas/blob/HEAD/com.mbta.ocs.raw-message.schema.json
+
+## Cost
+
+The expected cost of this environment is 56 USD per month:
+
+- 1 shard * 730 shard hours/month * 0.015 USD = 10.95 USD
+- 500,000 records / day * 31 days / month * 0.000000014 USD = 0.18 USD
+- 4 Enhanced fan-out consumers * 730 shard hours / month * 0.015 USD = 43.80 USD
+- 0.2 GB / day * 4 Enhanced fan-out consumers * 31 days / month * 0.013 USD = 0.65 USD
+
+Total: 55.58 USD
 
 ## Further Documentation
 
@@ -190,17 +203,16 @@ streaming platform".
 ### Advantages
 - more external software written to write to/consume Kafka
 - vendor-neutral: Kafka can run on any cloud or on-premises
-- pricing is based on cluster size and storage, so not as closely tied to the
-  number of events
+- pricing is based on cluster size and storage, not as closely tied to the
+  number of events or consumers
 - messages have additional metadata, requiring slightly less overhead when
   using CloudEvents
 - Being used by Cubic for Fare Transformation in Azure
 
 ### Disadvantages
-- MSK cannot currently resize a cluster, so we either need to pay more up
-  front, or pay an additional migration cost as we scale up
+- most of the "more software" is Java (or at least JVM-based)
+- much more expensive (cheapest production MSK cluster is ~$300/mo)
 - requires additional REST proxy to send messages from outside the VPC
-
 
 ## Kafka (non-managed)
 
@@ -261,6 +273,8 @@ integrations between CTD and other MBTA departments.
 - Some of the specific names (the name of the CloudEvent message, the name of
   the Kinesis stream) may change, either based on RFC feedback or during
   development.
+- When the random salt for the partition key is generated (per-connection or
+  once at startup) will be resolved during development.
 
 ## Batching
 There are options for batching messages into a single Kinesis record, which
