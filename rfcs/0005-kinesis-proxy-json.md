@@ -24,7 +24,7 @@ several issues we are trying to address:
 - missing metadata: the messages do not include the date they were sent, or
   the time the messages were received by SocketProxy 
 
-To address these issues, we'll create KinesisProxy, a new Elixir application,
+To address these issues, we'll create Tricycle, a new Elixir application,
 to write the OCS messages (along with additional metadata) as JSON CloudEvent
 messages to an AWS Kinesis stream. The partition key will be based on the
 source `host:port` address.
@@ -45,14 +45,14 @@ identifies the record within the shard. It also orders the messages: messages
 within a shard have a defined order, but not messages received by two
 different shards.
 
-In this case, a new KinesisProxy will be the producer. For each message
-received from the OCS, it will transform that message into a CloudEvent (see
-[RFC 4](https://github.com/mbta/technology-docs/pull/4)), encode the event as
-JSON, and put a record in the "ctd-raw-ocs-messages" stream. The
-"ctd-raw-ocs-messages" stream will be configured with one (1) shard. In order
-that train movement messages are processed in the correct order, the
-partition key will be based on the source `host:port` values. This ensures
-that all messages from a given connection are kept in order.
+In this case, a new Elixir application, Tricycle, will be the producer. For
+each message received from the OCS, it will transform that message into a
+CloudEvent (see [RFC 4](https://github.com/mbta/technology-docs/pull/4)),
+encode the event as JSON, and put a record in the "ctd-raw-ocs-messages"
+stream. The "ctd-raw-ocs-messages" stream will be configured with one (1)
+shard. In order that train movement messages are processed in the correct
+order, the partition key will be based on the source `host:port` values. This
+ensures that all messages from a given connection are kept in order.
 
 The four (4) RTR instances will be consumers of the stream. Instead of
 expecting messages on TCP sockets, they will read the CloudEvent JSON payload
@@ -74,11 +74,11 @@ detailed proposal makes those examples work. -->
 Currently, SocketProxy has a Receiver GenServer responsible for each incoming
 connection from OCS. Receiver then spawns a Forwarder GenServer to send the
 data to each of the destinations (currently, the four RTR instances). After
-this RFC, a new KinesisProxy which is responsible for
+this RFC, Tricycle, a new Elixir application, is responsible for
 writing records to a configured Kinesis stream:
 
 ```
-KINESIS_PROXY_LISTEN_PORT=8001 KINESIS_PROXY_STREAM=ctd-ocs-raw-messages mix run --no-halt
+LISTEN_PORT=8001 KINESIS_STREAM=ctd-ocs-raw-messages mix run --no-halt
 ```
 
 SocketProxy will be configured to add `127.0.0.1:8001` as a destination, but
@@ -268,6 +268,7 @@ integrations between CTD and other MBTA departments.
   addressed in the future independently of the solution that comes out of
   this RFC? -->
 
+- The specific name of the application can be resolved outside this RFC.
 - I expect that the specific implementation of state management will be
   resolved during development, rather than as a part of this RFC.
 - Some of the specific names (the name of the CloudEvent message, the name of
