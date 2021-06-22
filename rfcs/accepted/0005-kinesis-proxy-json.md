@@ -2,7 +2,7 @@
 - Start Date: 2021-06-02
 - RFC PR: mbta/technology-docs#5
 - Asana task: [Secure connection between socket_proxy and rtr](https://app.asana.com/0/881264583703207/1200290609745412/f)
-- Status: Proposed
+- Status: Accepted
 
 # Summary
 
