@@ -44,8 +44,8 @@ Our vehicle information is published in our GTFS-RT VehiclePositions file. There
 
 | Field | Description | Values |
 | --- | --- | --- |
-| `id` | Internal system of identification for the vehicle. Should be unique to the vehicle | Heavy/light rail: the line the car is on plus a hex code that is unique for the consist<br>Commuter Rail: the number of the control coach<br>Bus: the letter "y" plus the number of the bus |
-| `label` | a user visible label - for example the name of a train | Heavy/light rail: the number of the lead car<br>Commuter Rail: the number of the control coach<br>Bus: the number of the bus |
+| `id` | Internal system of identification for the vehicle. Should be unique to the vehicle | Heavy rail: the line the car is on plus a hex code that is unique for the consist<br>Light rail: "G-" plus a decimal code that is unique for the consist<br>Commuter Rail: the number of the control coach<br>Bus: the letter "y" plus the number of the bus |
+| `label` | a user visible label - for example the name of a train | Heavy rail: the number of the lead car<br>Light rail: the numbers of each car in the consist, separated by `-`<br>Commuter Rail: the number of the control coach<br>Bus: the number of the bus |
 | `consist` | Information about a single car in a multi-car train | Heavy/rail: `label` contains the number of each car making up the train, in order from front to back |
 
 In particular, bus labels and commuter rail labels overlap, leading us to
