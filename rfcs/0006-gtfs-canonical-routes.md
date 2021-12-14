@@ -113,7 +113,7 @@ against the branch route pattern.
 
 How route patterns containing canonical representative trips are tagged or otherwise identified:
 Using a new `canonical_route_pattern` field in route_patterns.txt, or is the new
-`service_schedule_typicality` field sufficient?
+`service_schedule_typicality` value sufficient?
 
 # Future possibilities
 
