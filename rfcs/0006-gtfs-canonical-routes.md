@@ -55,13 +55,14 @@ The canonical service appears in the following GTFS files in the following way:
   the canonical trips (added in the trips file below) do not resemble any scheduled service. New
   patterns in this file shall have a new `route_pattern_typicality` value of should be `6`, and
   `route_pattern_sort_order` should be a greater than the value for all non-canonical route patterns
-  for that given route/direction. This will be done by adding a new digit to
-  `route_pattern_sort_order` (placed right after the existing digits corresponding to the
-  `route_sort_order`). For routes with branches, you'll need a pattern for each
-  route/direction/branch (eg, for Providence/Stoughton Line, you should have _two_ new route
-  patterns in the outbound direction). Finallly, a new `canonical_route_pattern` field is added to
-  all route patterns, indicating whether or not it can be considered canonical (or if the route does
-  not have canonical patterns defined, as will be the case for bus initially).
+  for that given route/direction/branch. This will be done by adding two new digits to
+  `route_pattern_sort_order` (one for branch and the other for canonicalness, both placed right
+  after the existing digits corresponding to the `route_sort_order`). For routes with branches,
+  you'll need a pattern for each route/direction/branch (eg, for Providence/Stoughton Line, you
+  should have _two_ new route patterns in the outbound direction). Finally, a new
+  `canonical_route_pattern` field is added to all route patterns, indicating whether or not it can
+  be considered canonical (or if the route does not have canonical patterns defined, as will be the
+  case for bus initially).
 - **shapes.txt** will add new shapes for all canonical subway trips, since the shape IDs can change
   between ratings, especially when stations are open and closed on a long-term basis. These new
   shapes can have an identical set of points as those shapes used during current service. Existing
