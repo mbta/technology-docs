@@ -41,6 +41,7 @@ To install Podman:
 ```bash
 brew install podman
 podman machine init --disk-size 20
+podman machine start
 ```
 
 To build/run a container:
