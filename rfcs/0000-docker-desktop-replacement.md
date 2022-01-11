@@ -67,11 +67,13 @@ alias docker=podman
 Podman provides a CLI-compatible interface, but it's possible that there are
 Docker CLI options which are different or that Podman does not support.
 
-@paulswartz ran into an issue where the clock in the virtual machine got out of sync. To re-sync them:
+[@paulswartz][@paulswartz] ran into an issue where the clock in the virtual machine got out of sync. To re-sync them:
 
 ```bash
 podman machine ssh "sudo systemctl restart chronyd && timedatectl --adjust-system-clock"
 ```
+
+[@paulswartz]: https://github.com/paulswartz
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
