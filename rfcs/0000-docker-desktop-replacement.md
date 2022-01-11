@@ -7,22 +7,25 @@
 # Summary
 [summary]: #summary
 
-Standardize on Podman for working with containers: https://podman.io/
+Standardize on [Podman][podman] for working with containers.
+
+[podman]: https://podman.io/
 
 # Motivation
 [motivation]: #motivation
 
-As of August 2021, Docker Desktop requires a license ($5 to $21/month/developer)
-for professional use.
-[https://www.docker.com/blog/updating-product-subscriptions/]. As the MBTA is a
-large organization, we need to either pay for the licenses or find a new option
-for development. Many of our developers use Docker Desktop to build and run
+As of [August 2021][docker-subscriptions], Docker Desktop requires a license ($5
+to $21/month/developer) for professional use. As the MBTA is a large
+organization, we need to either pay for the licenses or find a new option for
+development. Many of our developers use Docker Desktop to build and run
 containers, and we would like to continue that style of development.
+
+[docker-subscriptions]: https://www.docker.com/blog/updating-product-subscriptions/
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-[Podman](https://podman.io) is a tool for working with containers: building them
+[Podman][podman] is a tool for working with containers: building them
 and running them, in particular. It provides a command line interface (CLI)
 which is compatible with the Docker CLI, at the level we currently use it.
 
@@ -75,7 +78,7 @@ podman machine ssh "sudo systemctl restart chronyd && timedatectl --adjust-syste
 
 ## Minikube
 
-[Minikube](https://minikube.sigs.k8s.io/docs/start/) is a local Kubernetes instance, which also provides a Docker-compatible API.
+[Minikube][minikube] is a local Kubernetes instance, which also provides a Docker-compatible API.
 
 ```bash
 brew install minikube hyperkit docker
@@ -88,6 +91,8 @@ docker run <tag>
 
 However, in order to connect to the container, you need to use `minikube ip` to
 get the separate IP address to use: `localhost` or `127.0.0.1` do not work.
+
+[minikube]: https://minikube.sigs.k8s.io/docs/start/
 
 ## Paying for licenses
 
