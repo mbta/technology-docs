@@ -85,7 +85,7 @@ podman machine ssh "sudo systemctl restart chronyd && timedatectl --adjust-syste
 ```bash
 brew install minikube hyperkit docker
 minikube start --driver=hyperkit
-source (minikube docker-env)
+source $(minikube docker-env)
 
 docker build -t <tag> .
 docker run <tag>
