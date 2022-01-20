@@ -1,6 +1,6 @@
 - Feature Name: `docker-desktop-replacement`
 - Start Date: 2022-01-06
-- RFC PR: [mbta/technology-docs#0000](https://github.com/mbta/technology-docs/pull/0000)
+- RFC PR: [mbta/technology-docs#0010](https://github.com/mbta/technology-docs/pull/0010)
 - Asana task: [Docker Desktop situation](https://app.asana.com/0/1200506724882024/1201470397690247)
 - Status: Proposed
 
@@ -67,7 +67,11 @@ alias docker=podman
 Podman provides a CLI-compatible interface, but it's possible that there are
 Docker CLI options which are different or that Podman does not support.
 
-[@paulswartz][@paulswartz] ran into an issue where the clock in the virtual machine got out of sync. To re-sync them:
+It's not clear what organization maintains Podman, although it appears to be
+RedHat (lots of contributors are RedHat employees).
+
+[@paulswartz][@paulswartz] ran into an issue where the clock in the virtual
+machine got out of sync. To re-sync them:
 
 ```bash
 podman machine ssh "sudo systemctl restart chronyd && timedatectl --adjust-system-clock"
