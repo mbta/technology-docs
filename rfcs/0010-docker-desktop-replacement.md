@@ -7,9 +7,9 @@
 # Summary
 [summary]: #summary
 
-Standardize on [Podman][podman] for working with containers.
+Standardize on [Colima][colima] for working with Docker on macOS.
 
-[podman]: https://podman.io/
+[colima]: https://github.com/abiosoft/colima
 
 # Motivation
 [motivation]: #motivation
@@ -25,62 +25,51 @@ containers, and we would like to continue that style of development.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-[Podman][podman] is a tool for working with containers: building them
-and running them, in particular. It provides a command line interface (CLI)
-which is compatible with the Docker CLI, at the level we currently use it.
-
-Instead of installing Docker Desktop and the Docker CLI tools, developers will
-install Podman and use it to work with containers on their local machines. In
-CI/CD and in AWS, we will continue to use Docker.
+[Colima][colima] provides a Docker-compatible runtime for containers on macOS. It supports port forwarding and volume mounting out of the box.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Podman (like similar tools on OS X) works by running a virtualized Linux VM, and
+Colima (like similar tools on OS X) works by running a virtualized Linux VM, and
 then running the containers inside that VM.
 
 To install Podman:
 
 ```bash
-brew install podman
-podman machine init --disk-size 20
-podman machine start
+brew install colima docker
+colima start
 ```
 
 To build/run a container:
 
 ```bash
-podman build -t <tag> .
-podman run <tag>
+docker build -t <tag> .
+docker run <tag>
 ```
 
-Port forwarding (with `-p`) and interactive use (with `-it`) work as expected.
-
-If you want to continue to use `docker` on the command line, you can alias it:
-```bash
-alias docker=podman
-```
+Port forwarding (with `-p`), volume mounting (with `-v`), and interactive use (with `-it`) work as expected.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Podman provides a CLI-compatible interface, but it's possible that there are
-Docker CLI options which are different or that Podman does not support.
-
-It's not clear what organization maintains Podman, although it appears to be
-RedHat (lots of contributors are RedHat employees).
-
-[@paulswartz][@paulswartz] ran into an issue where the clock in the virtual
-machine got out of sync. To re-sync them:
-
-```bash
-podman machine ssh "sudo systemctl restart chronyd && timedatectl --adjust-system-clock"
-```
-
-[@paulswartz]: https://github.com/paulswartz
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+## Podman
+
+[Podman](https://podman.io) is a tool for working with containers: building and running them, in particular. It provides a command line interface (CLI) which is compatible with the Docker CLI.
+
+```bash
+brew install podman
+podman machine init --disk-size 20
+podman machine start
+
+podman build -t <tag> .
+podman run <tag>
+```
+
+However, it doesn't currently support mounting volumes, which several developers use.
 
 ## Minikube
 
@@ -113,6 +102,7 @@ This would also need to go through procurement. It would also involve everyone l
 
 - Docker Desktop alternatives: https://matt-rickard.com/docker-desktop-alternatives/
 - Top Docker alternatives: https://blog.logrocket.com/top-docker-alternatives-2022/
+- Using Docker with Multipass: https://ubuntu.com/blog/replacing-docker-desktop-on-windows-and-mac-with-multipass 
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
