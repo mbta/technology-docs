@@ -47,7 +47,6 @@ The same TMOV message, as a CloudEvent representing the raw message (encoded in 
   "partitionkey": "TMOV-G",
   "time": "2020-02-11T02:00:40-05:00",
   "data": {
-    "received_time": "2021-02-11T02:00:41.030-05:00",
     "raw": "9529,TMOV,02:00:40,G,10230,42.336251428162655,-71.14902308252195,1,831,25,  3885,gpsci,3885,0.00,254.19,3,42.336251428162655,-71.14902308252195"
   }
 }
