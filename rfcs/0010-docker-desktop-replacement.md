@@ -33,7 +33,7 @@ containers, and we would like to continue that style of development.
 Colima (like similar tools on OS X) works by running a virtualized Linux VM, and
 then running the containers inside that VM.
 
-To install Podman:
+To install Colima:
 
 ```bash
 brew install colima docker
