@@ -55,9 +55,7 @@ The canonical service appears in the following GTFS files in the following way:
   the canonical trips (added in the trips file below) do not resemble any scheduled service. New
   patterns in this file shall have a new `route_pattern_typicality` value of should be `5`, and
   `route_pattern_sort_order` should be a greater than the value for all non-canonical route patterns
-  for that given route/direction/branch. This will be done by adding two new digits to
-  `route_pattern_sort_order` (one for branch and the other for canonicalness, both placed right
-  after the existing digits corresponding to the `route_sort_order`). For routes with branches,
+  for that given route/direction/branch. For routes with branches,
   you'll need a pattern for each route/direction/branch (eg, for Providence/Stoughton Line, you
   should have _two_ new route patterns in the outbound direction). Finally, a new
   `canonical_route_pattern` field is added to all route patterns, defined with the following values:
@@ -77,18 +75,15 @@ The canonical service appears in the following GTFS files in the following way:
   route patterns.
 - **stop_times.txt** includes all stops that trains in the route/direction passes through, even if
   they are temporarily closed. Increment the arrival/departure times by one minute for each
-  subsequent stop. For a sample, see the attached GTFS file, the output of [✓ 🧪 🚝 Canonical
+  subsequent stop. For a sample, see the GTFS file attached to [✓ 🧪 🚝 Canonical
   trips/patterns experiment](https://app.asana.com/0/881264583703207/1200210504369250), which
   trialled this for Green Line D and Lowell Line (only in the outbound direction).
 
-This will be done as a new "step" of the Makefile called `canonical`, which runs between `truncate`
-and `current`. There will be a new a directory, `input/canonical/` to store any static data the step
-uses.
-
-The canonical step will be a Python module that reads in the `truncate` feed, and writes out its own
-feed after transforming it. The transformations are as above, and also will update any canonical
-trips to use current route patterns (and vice versa) if relevant, eliminating redundant route
-patterns.
+There will be a new a directory, `input/canonical/` to store any static, canonical data that may 
+become published. The determination of what canonical information is to be published will be added 
+as part of the existing `truncate` phase (or made into a new, subsequent `canonical` phase if need 
+be). This step will update any canonical trips to use current route patterns (and vice versa) if 
+relevant, eliminating redundant route patterns.
 
 For Commuter Rail route patterns, the canonical one will specify every stop as non-flag, non-leave
 early stop. For both subway and Commuter Rail canonical trips, no data around bicycle allowances
@@ -100,7 +95,7 @@ This is more complicated than not doing it.
 
 # Rationale and alternatives
 
-See proposed Concepts [1](https://github.com/mbta/technology-docs/pull/6#issuecomment-952315958), [4](https://github.com/mbta/technology-docs/pull/6#issuecomment-952315958), and [5](https://github.com/mbta/technology-docs/pull/6#issuecomment-962120434) in prior discussion.
+See previously-proposed Concepts [1](https://github.com/mbta/technology-docs/pull/6#issuecomment-952315958), [4](https://github.com/mbta/technology-docs/pull/6#issuecomment-952315958), and [5](https://github.com/mbta/technology-docs/pull/6#issuecomment-962120434) in the pull request discussion.
 
 # Prior art
 
@@ -109,13 +104,7 @@ Until now we've been doing ad-hoc adjustments to determine the route pattern of 
 
 # Unresolved questions
 
-Ensuring that we would not be in a situation where the sort order, perhaps ordered by
-frequency/proportion of trips, becomes a different order than desired for the main route pattern
-against the branch route pattern.
-
-How route patterns containing canonical representative trips are tagged or otherwise identified:
-Using a new `canonical_route_pattern` field in route_patterns.txt, or is the new
-`service_schedule_typicality` value sufficient?
+Earlier questions around sorting route patterns, and identifying canonical representative trip, have been resolved.
 
 # Future possibilities
 
