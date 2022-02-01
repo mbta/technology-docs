@@ -2,7 +2,7 @@
 - Start Date: 2021-06-03
 - RFC PR: [mbta/technology-docs#0006](https://github.com/mbta/technology-docs/pull/0006)
 - Asana task: [🚝 Publish canonical trips/patterns for rail routes](https://app.asana.com/0/881264583703207/1200325279789524/f)
-- Status: Proposed
+- Status: Accepted
 
 # Summary
 
