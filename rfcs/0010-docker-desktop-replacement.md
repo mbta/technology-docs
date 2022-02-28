@@ -25,7 +25,8 @@ containers, and we would like to continue that style of development.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-[Colima][colima] provides a Docker-compatible runtime for containers on macOS. It supports port forwarding and volume mounting out of the box.
+[Colima][colima] provides a Docker-compatible runtime for containers on macOS.
+It supports port forwarding and volume mounting out of the box.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -47,18 +48,24 @@ docker build -t <tag> .
 docker run <tag>
 ```
 
-Port forwarding (with `-p`), volume mounting (with `-v`), and interactive use (with `-it`) work as expected.
+Port forwarding (with `-p`), read-only volume mounting (with `-v`), and interactive use (with `-it`) work as expected.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
+Writable volume mounts do not work out of the box (issues
+[#83](https://github.com/abiosoft/colima/issues/83) and
+[#102](https://github.com/abiosoft/colima/issues/102)). However, there are
+workarounds listed in those tickets.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## Podman
 
-[Podman](https://podman.io) is a tool for working with containers: building and running them, in particular. It provides a command line interface (CLI) which is compatible with the Docker CLI.
+[Podman](https://podman.io) is a tool for working with containers: building and
+running them, in particular. It provides a command line interface (CLI) which is
+compatible with the Docker CLI.
 
 ```bash
 brew install podman
