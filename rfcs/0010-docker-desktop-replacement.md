@@ -114,7 +114,8 @@ This would also need to go through procurement. It would also involve everyone l
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Are there other Docker features we need to validate before making this decision?
+- ~Are there other Docker features we need to validate before making this decision?~
+- Should we procure Docker Desktop in the future?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
