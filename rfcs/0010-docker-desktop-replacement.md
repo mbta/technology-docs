@@ -2,7 +2,7 @@
 - Start Date: 2022-01-06
 - RFC PR: [mbta/technology-docs#0010](https://github.com/mbta/technology-docs/pull/0010)
 - Asana task: [Docker Desktop situation](https://app.asana.com/0/1200506724882024/1201470397690247)
-- Status: Proposed
+- Status: Accepted
 
 # Summary
 [summary]: #summary
@@ -26,7 +26,7 @@ containers, and we would like to continue that style of development.
 [guide-level-explanation]: #guide-level-explanation
 
 [Colima][colima] provides a Docker-compatible runtime for containers on macOS.
-It supports port forwarding and volume mounting out of the box.
+It supports port forwarding and read-only volume mounting out of the box.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -56,7 +56,7 @@ Port forwarding (with `-p`), read-only volume mounting (with `-v`), and interact
 Writable volume mounts do not work out of the box (issues
 [#83](https://github.com/abiosoft/colima/issues/83) and
 [#102](https://github.com/abiosoft/colima/issues/102)). However, there are
-workarounds listed in those tickets.
+workarounds listed in those tickets that have not been fully investigated.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
