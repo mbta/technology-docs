@@ -1,0 +1,39 @@
+digraph G {
+  rankdir="LR";
+
+  "OCS"-> "Kinesis" [label="via Trike"];
+  "Kinesis" -> "CentralStation";
+
+  "TransitMaster" -> "Kinesis" [label="via Busloc"];
+  "Samsara (bus)" -> "CentralStation";
+  "Samsara (yankee)" -> "CentralStation";
+
+  "Keolis VehiclePositions" -> "CentralStation";
+  "Keolis BoardingStatuses" -> "CentralStation";
+
+  "Glides" -> "CentralStation" [label="Service Changes"]
+  "Skate" -> "CentralStation" [label="Service Changes"]
+  "Keolis KVL" -> "CentralStation" [label="Service Changes"]
+  "Winthrop" -> "CentralStation"
+
+  "CentralStation" -> "VehiclePositions"
+  "CentralStation" -> "Service Changes"
+  "VehiclePositions" -> "RTR"
+  "Service Changes" -> "RTR"
+  "VehiclePositions" -> "Swiftly"
+  "Service Changes" -> "Swiftly"
+
+  "RTR" -> "Subway TripUpdates" -> "Concentrate";
+  "Swiftly"-> "Bus+CR TripUpdates" -> "Concentrate";
+  "VehiclePositions" -> "Concentrate";
+
+
+  "CentralStation" -> "Glides" [label="non-revenue train info"]
+  "CentralStation" -> "Skate" [label="operator info"]
+
+  "Alerts UI" -> "Concentrate"
+  "Concentrate" -> "API"
+  "Alerts UI" -> "API"
+
+  { rank=same; "Glides" "Skate" "RTR" "Swiftly"}
+}
