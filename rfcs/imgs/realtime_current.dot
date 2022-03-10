@@ -1,0 +1,88 @@
+ digraph G {
+  rankdir="LR";
+  {rank=same "RTR" "CRB/TrainLoc" "Busloc"}
+  {rank=same "Glides" "Realtime Signs" "Skate"}
+
+	subgraph cluster_swiftly {
+		label = "Swiftly";
+    "Swiftly (mbta-cr)";
+    "Swiftly (mbta-bus)";
+    "Swiftly (mbta-winthrop)";
+	}
+
+  "OCS"-> "Kinesis" [label="via Trike"];
+  "Kinesis" -> "RTR"
+  "RTR" -> "s3://mbta-gtfs-s3/rtr/TripUpdates_enhanced.json";
+  "RTR" -> "s3://mbta-gtfs-s3/rtr/VehiclePositions_enhanced.json";
+  "RTR" -> "s3://mbta-gtfs-s3/VehiclePositions.pb";
+  "RTR" -> "s3://mbta-gtfs-s3/TripUpdates.pb";
+
+  subgraph cluster_rtr {
+    label="
+    does some stuff
+    how does this look?
+    "
+    "RTR";
+  }
+
+  "s3://mbta-busloc-s3/prod/VehiclePositions_enhanced.json" -> "concentrate";
+  "s3://mbta-busloc-s3/prod/TripUpdates_enhanced.json" -> "concentrate";
+  "s3://mbta-gtfs-s3/TripUpdates_enhanced.json" -> "concentrate";
+  "s3://mbta-gtfs-s3/rtr/TripUpdates_enhanced.json" -> "concentrate";
+  "s3://mbta-gtfs-s3/rtr/VehiclePositions_enhanced.json" -> "concentrate";
+  "https://api.goswift.ly/real-time/mbta-bus/gtfs-rt-vehicle-positions" -> "concentrate";
+  "https://api.goswift.ly/real-time/mbta-bus/gtfs-rt-trip-updates" -> "concentrate";
+  "https://api.goswift.ly/real-time/mbta-winthrop/gtfs-rt-vehicle-positions" -> "concentrate";
+  "https://api.goswift.ly/real-time/mbta-winthrop/gtfs-rt-trip-updates" -> "concentrate";
+  "https://api.goswift.ly/real-time/mbta-cr/gtfs-rt-trip-updates" -> "concentrate";
+  "https://api.goswift.ly/real-time/mbta-cr/gtfs-rt-vehicle-positions" -> "concentrate";
+
+  "concentrate" -> "s3://mbta-gtfs-s3/concentrate/TripUpdates.pb";
+  "concentrate" -> "s3://mbta-gtfs-s3/concentrate/TripUpdates.json";
+  "concentrate" -> "s3://mbta-gtfs-s3/concentrate/TripUpdates_enhanced.json";
+  "concentrate" -> "s3://mbta-gtfs-s3/concentrate/VehiclePositions.pb";
+  "concentrate" -> "s3://mbta-gtfs-s3/concentrate/VehiclePositions.json";
+  "concentrate" -> "s3://mbta-gtfs-s3/concentrate/VehiclePositions_enhanced.json";
+
+  "TransitMaster" -> "Busloc";
+  "Samsara (bus)" -> "Busloc";
+  "Samsara (yankee)" -> "Busloc";
+  "Eyeride (defunct)" -> "Busloc";
+
+  "https://keolis-api-production.firebaseio.com/12001_departureData_nodejs.json" -> "CRB/TrainLoc";
+  "https://keolis-api-production.firebaseio.com/p-kcs-avl-firebase-vehiclepositions.json" -> "CRB/TrainLoc";
+
+  "CRB/TrainLoc" -> "s3://mbta-gtfs-s3/train_loc/VehiclePositions_enhanced.json";
+  "CRB/TrainLoc" -> "s3://mbta-gtfs-s3/TripUpdates_enhanced.json";
+
+  "Busloc" -> "s3://mbta-busloc-s3/prod/TripUpdates_enhanced.json";
+  "Busloc" -> "s3://mbta-busloc-s3/prod/VehiclePositions_enhanced.json";
+  "Busloc" -> "s3://mbta-busloc-s3/prod/VehiclePositions_enhanced_shuttles.json";
+
+  "s3://mbta-gtfs-s3/train_loc/VehiclePositions_enhanced.json" -> "Swiftly (mbta-cr)";
+  "s3://mbta-busloc-s3/prod/VehiclePositions_enhanced.json" -> "Swiftly (mbta-bus)";
+  "Winthrop???" -> "Swiftly (mbta-winthrop)";
+
+  "Swiftly (mbta-cr)" -> "https://api.goswift.ly/real-time/mbta-cr/gtfs-rt-vehicle-positions";
+  "Swiftly (mbta-cr)" -> "https://api.goswift.ly/real-time/mbta-cr/gtfs-rt-trip-updates";
+  "Swiftly (mbta-bus)" -> "https://api.goswift.ly/real-time/mbta-bus/gtfs-rt-vehicle-positions";
+  "Swiftly (mbta-bus)" -> "https://api.goswift.ly/real-time/mbta-bus/gtfs-rt-trip-updates";
+  "Swiftly (mbta-bus)" -> "https://api.goswift.ly/real-time/mbta-bus/vehicles";
+  "Swiftly (mbta-winthrop)" -> "https://api.goswift.ly/real-time/mbta-winthrop/gtfs-rt-vehicle-positions";
+  "Swiftly (mbta-winthrop)" -> "https://api.goswift.ly/real-time/mbta-winthrop/gtfs-rt-trip-updates";
+
+  "s3://mbta-gtfs-s3/rtr/TripUpdates_enhanced.json" -> "Realtime Signs";
+  "s3://mbta-gtfs-s3/rtr/VehiclePositions_enhanced.json" -> "Realtime Signs";
+
+  "s3://mbta-gtfs-s3/VehiclePositions.pb" -> "Glides";
+  "s3://mbta-gtfs-s3/TripUpdates.pb" -> "Glides";
+
+  "https://api.goswift.ly/real-time/mbta-bus/vehicles" -> "Skate";
+  "s3://mbta-busloc-s3/prod/TripUpdates_enhanced.json" -> "Skate";
+
+  "Alerts UI" -> "https://cdn.mbta.com/realtime/Alerts_enhanced.json"
+  "https://cdn.mbta.com/realtime/Alerts_enhanced.json" -> "API"
+  "https://cdn.mbta.com/realtime/Alerts_enhanced.json" -> "concentrate"
+  "s3://mbta-gtfs-s3/concentrate/TripUpdates_enhanced.json" -> "API"
+  "s3://mbta-gtfs-s3/concentrate/VehiclePositions_enhanced.json" -> "API"
+}
