@@ -100,7 +100,7 @@ it sends a trip assignment event to consumers:
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.realtime-edits.trip-assignment",
+  "type": "com.mbta.ctd.realtime-edits.trip-assignment.v1",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2022-04-12T13:16:10-05:00",
@@ -150,7 +150,7 @@ Glides sends a dropped trip event to consumers:
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.realtime-edits.dropped-trip",
+  "type": "com.mbta.ctd.realtime-edits.dropped-trip.v1",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2022-04-12T13:16:10-05:00",
@@ -201,7 +201,7 @@ Glides sends an added trip event to consumers:
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.realtime-edits.added-trip",
+  "type": "com.mbta.ctd.realtime-edits.added-trip.v1",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2022-04-12T13:16:10-05:00",
@@ -256,7 +256,7 @@ Glides sends an adjusted trip event to consumers:
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.realtime-edits.adjusted-trip",
+  "type": "com.mbta.ctd.realtime-edits.adjusted-trip.v1",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2022-04-12T13:16:10-05:00",
@@ -397,7 +397,7 @@ Glides sends a restructured trip event to consumers:
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.realtime-edits.restructured-trip",
+  "type": "com.mbta.ctd.realtime-edits.restructured-trip.v1",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2022-04-12T13:16:10-05:00",
@@ -469,7 +469,7 @@ Glides sends a start time event to consumers:
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.realtime-edits.start-time",
+  "type": "com.mbta.ctd.realtime-edits.start-time.v1",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2022-04-12T13:16:10-05:00",
@@ -525,7 +525,7 @@ Glides sends a hold time event to consumers:
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.realtime-edits.hold-time",
+  "type": "com.mbta.ctd.realtime-edits.hold-time.v1",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2022-04-12T13:16:10-05:00",
