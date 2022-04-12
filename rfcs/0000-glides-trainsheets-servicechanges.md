@@ -7,7 +7,9 @@
 # Summary
 [summary]: #summary
 
-Glides will provide trainsheet-based service data to RTR and other services that need it by providing a GTFS-ServiceChanges JSON feed via AWS S3.
+| GTFS-realtime | Realtime Edits |
+|---------------|----------------|
+|Glides will provide trainsheet-based service data to RTR and other services that need it by providing a GTFS-ServiceChanges JSON feed via AWS S3.|Glides will provide trainsheet-based service data to RTR and other services that need it by sending [CloudEvents](https://cloudevents.io/)-formatted data to applications that wish to consume that data.|
 
 # Motivation
 [motivation]: #motivation
@@ -19,6 +21,15 @@ This data can serve to improve the rider-facing predictions produced by RTR, esp
 [guide-level-explanation]: #guide-level-explanation
 
 Glides trainsheets can record several different types of events.
+
+<table>
+<tr>
+<th>GTFS-realtime</th>
+<th>Realtime Edits</th>
+</tr>
+<tr>
+<td>
+
 Events are added to the Glides trainsheet data feed as soon as they are entered to Glides, and are removed from the feed five minutes after the relevant trip has ended or was scheduled to end, whichever comes last.
 
 Example top-level feed structure:
@@ -33,12 +44,30 @@ Example top-level feed structure:
 }
 ```
 
+</td>
+<td>
+
+Events are sent to consumers as soon as they are entered to Glides.
+
+</td>
+</tr>
+</table>
+
 ## Trip Assignments
 
 Glides trainsheets record the consist that will be assigned to each trip.
 Currently, RTR has to guess this assignment based on limited information.
 
-When Glides knows the consist assigned to a trip that already exists in static GTFS, it uses a GTFS-realtime VehicleUpdate event to convey that information in the feed:
+When Glides knows the consist assigned to a trip that already exists in static GTFS,
+<table>
+<tr>
+<th>GTFS-realtime</th>
+<th>Realtime Edits</th>
+</tr>
+<tr>
+<td>
+
+it uses a GTFS-realtime VehicleUpdate event to convey that information in the feed:
 ```json
 {
   "id": "01dd55e08e36",
@@ -64,9 +93,43 @@ When Glides knows the consist assigned to a trip that already exists in static G
 
 This way of handling the consist matches what's currently in the public GTFS-realtime VehiclePositions enhanced JSON feed.
 
+</td>
+<td>
+
+it sends a trip assignment event to consumers:
+```json
+{
+  "specversion": "1.0",
+  "type": "com.mbta.ctd.realtime-edits.trip-assignment",
+  "source": "glides.mbta.com",
+  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
+  "time": "2022-04-12T13:16:10-05:00",
+  "data": {
+    "trip-id": "50974586",
+    "consist": [
+      "3856",
+      "3846"
+    ]
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
 ## Dropped Trips
 
-If a trip listed in static GTFS will not be occurring at all, Glides uses a GTFS-realtime VehicleUpdate event to mark the trip as canceled:
+If a trip listed in static GTFS will not be occurring at all,
+<table>
+<tr>
+<th>GTFS-realtime</th>
+<th>Realtime Edits</th>
+</tr>
+<tr>
+<td>
+
+Glides uses a GTFS-realtime VehicleUpdate event to mark the trip as canceled:
 ```json
 {
   "id": "ac378f6daace",
@@ -80,9 +143,39 @@ If a trip listed in static GTFS will not be occurring at all, Glides uses a GTFS
 }
 ```
 
+</td>
+<td>
+
+Glides sends a dropped trip event to consumers:
+```json
+{
+  "specversion": "1.0",
+  "type": "com.mbta.ctd.realtime-edits.dropped-trip",
+  "source": "glides.mbta.com",
+  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
+  "time": "2022-04-12T13:16:10-05:00",
+  "data": {
+    "trip-id": "50974586"
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
 ## Added Trips
 
-If a trip that will be occurring cannot be matched to a trip listed in static GTFS, Glides uses a GTFS-realtime VehicleUpdate event to mark the trip as a duplicate of an existing trip running the same path:
+If a trip that will be occurring cannot be matched to a trip listed in static GTFS,
+<table>
+<tr>
+<th>GTFS-realtime</th>
+<th>Realtime Edits</th>
+</tr>
+<tr>
+<td>
+
+Glides uses a GTFS-realtime VehicleUpdate event to mark the trip as a duplicate of an existing trip running the same path:
 ```json
 {
   "id": "b9a1e9112231",
@@ -101,9 +194,42 @@ If a trip that will be occurring cannot be matched to a trip listed in static GT
 }
 ```
 
+</td>
+<td>
+
+Glides sends an added trip event to consumers:
+```json
+{
+  "specversion": "1.0",
+  "type": "com.mbta.ctd.realtime-edits.added-trip",
+  "source": "glides.mbta.com",
+  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
+  "time": "2022-04-12T13:16:10-05:00",
+  "data": {
+    "template-trip-id": "50974586",
+    "new-trip-id": "757460c22ece",
+    "service-date": "2022-04-12",
+    "start-time": "15:57:09"
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
 ## Adjusted Trips - Skipped Stops
 
-If a trip will be skipping some stops it was scheduled to make, either because it is express or because its destination has been brought earlier in its path, Glides uses a GTFS-realtime VehicleUpdate event to mark the applicable stops as skipped:
+If a trip will be skipping some stops it was scheduled to make, either because it is express or because its destination has been brought earlier in its path,
+<table>
+<tr>
+<th>GTFS-realtime</th>
+<th>Realtime Edits</th>
+</tr>
+<tr>
+<td>
+
+Glides uses a GTFS-realtime VehicleUpdate event to mark the applicable stops as skipped:
 ```json
 {
   "id": "f9b7373a3fc4",
@@ -123,9 +249,42 @@ If a trip will be skipping some stops it was scheduled to make, either because i
 }
 ```
 
+</td>
+<td>
+
+Glides sends an adjusted trip event to consumers:
+```json
+{
+  "specversion": "1.0",
+  "type": "com.mbta.ctd.realtime-edits.adjusted-trip",
+  "source": "glides.mbta.com",
+  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
+  "time": "2022-04-12T13:16:10-05:00",
+  "data": {
+    "trip-id": "50974586",
+    "skipped-stops": [
+      "70129"
+    ]
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
 ## Adjusted Trips - Added Stops
 
-If a trip will be making more stops than it was scheduled to make, Glides uses a [GTFS-ServiceChanges v3.1](https://bit.ly/gtfs-service-changes-v3_1) NewTrips event to provide the new sequence of stops and a GTFS-ServiceChanges v3.1 VehicleUpdate event to mark the original trip as replaced by the new trip:
+If a trip will be making more stops than it was scheduled to make,
+<table>
+<tr>
+<th>GTFS-realtime</th>
+<th>Realtime Edits</th>
+</tr>
+<tr>
+<td>
+
+Glides uses a [GTFS-ServiceChanges v3.1](https://bit.ly/gtfs-service-changes-v3_1) NewTrips event to provide the new sequence of stops and a GTFS-ServiceChanges v3.1 VehicleUpdate event to mark the original trip as replaced by the new trip:
 ```json
 {
   "id": "84e68f49dfa5",
@@ -231,9 +390,53 @@ If there was no original trip, the `trip_update` value makes no reference to an 
 }
 ```
 
+</td>
+<td>
+
+Glides sends an adjusted trip event to consumers:
+```json
+{
+  "specversion": "1.0",
+  "type": "com.mbta.ctd.realtime-edits.adjusted-trip",
+  "source": "glides.mbta.com",
+  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
+  "time": "2022-04-12T13:16:10-05:00",
+  "data": {
+    "trip-id": "50973989",
+    "replaced-stops": [
+      "70504",
+      "70502",
+      "70208",
+      "70206",
+      "70204",
+      "70202",
+      "70199",
+      "70159",
+      "70157",
+      "70155",
+      "70153",
+      "71151"
+    ]
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
 ## Departure Time
 
-If the time at which a trip will leave its starting terminal is entered into Glides, Glides will use a GTFS-realtime TripUpdate event to specify that time:
+If the time at which a trip will leave its starting terminal is entered into Glides,
+<table>
+<tr>
+<th>GTFS-realtime</th>
+<th>Realtime Edits</th>
+</tr>
+<tr>
+<td>
+
+Glides will use a GTFS-realtime TripUpdate event to specify that time:
 ```json
 {
   "id": "2131d0f347c1",
@@ -259,9 +462,40 @@ If the time at which a trip will leave its starting terminal is entered into Gli
 }
 ```
 
+</td>
+<td>
+
+Glides sends a start time event to consumers:
+```json
+{
+  "specversion": "1.0",
+  "type": "com.mbta.ctd.realtime-edits.start-time",
+  "source": "glides.mbta.com",
+  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
+  "time": "2022-04-12T13:16:10-05:00",
+  "data": {
+    "trip-id": "50973989",
+    "start-time": "16:39:04"
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
 ## Hold Time
 
-If Glides knows that a train will be held for extra time at a station, Glides will use a GTFS-realtime TripUpdate event to specify that delay:
+If Glides knows that a train will be held for extra time at a station,
+<table>
+<tr>
+<th>GTFS-realtime</th>
+<th>Realtime Edits</th>
+</tr>
+<tr>
+<td>
+
+Glides will use a GTFS-realtime TripUpdate event to specify that delay:
 ```json
 {
   "id": "17b4cd8574a3",
@@ -283,6 +517,29 @@ If Glides knows that a train will be held for extra time at a station, Glides wi
   }
 }
 ```
+
+</td>
+<td>
+
+Glides sends a hold time event to consumers:
+```json
+{
+  "specversion": "1.0",
+  "type": "com.mbta.ctd.realtime-edits.hold-time",
+  "source": "glides.mbta.com",
+  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
+  "time": "2022-04-12T13:16:10-05:00",
+  "data": {
+    "trip-id": "50973989",
+    "stop-id": "70204",
+    "hold-time": 180 // seconds
+  }
+}
+```
+
+</td>
+</tr>
+</table>
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
