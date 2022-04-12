@@ -393,17 +393,17 @@ If there was no original trip, the `trip_update` value makes no reference to an 
 </td>
 <td>
 
-Glides sends an adjusted trip event to consumers:
+Glides sends a restructured trip event to consumers:
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.realtime-edits.adjusted-trip",
+  "type": "com.mbta.ctd.realtime-edits.restructured-trip",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2022-04-12T13:16:10-05:00",
   "data": {
     "trip-id": "50973989",
-    "replaced-stops": [
+    "stops": [
       "70504",
       "70502",
       "70208",
