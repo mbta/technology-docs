@@ -9,7 +9,7 @@
 
 | GTFS-realtime | Realtime Edits |
 |---------------|----------------|
-|Glides will provide trainsheet-based service data to RTR and other services that need it by providing a GTFS-ServiceChanges JSON feed via AWS S3.|Glides will provide trainsheet-based service data to RTR and other services that need it by sending [CloudEvents](https://cloudevents.io/)-formatted data to applications that wish to consume that data.|
+|Glides will provide trainsheet-based service data to RTR and other services that need it by providing a [GTFS-ServiceChanges](http://bit.ly/gtfs-service-changes-v3_1) JSON feed via Amazon S3.|Glides will provide trainsheet-based service data to RTR and other services that need it by sending [CloudEvents](https://cloudevents.io/)-formatted data to applications that wish to consume that data.|
 
 # Motivation
 [motivation]: #motivation
@@ -378,6 +378,8 @@ Glides uses a [GTFS-ServiceChanges v3.1](https://bit.ly/gtfs-service-changes-v3_
 }
 ```
 
+(Times should in principle not be there, but they're required in GTFS-NewTrips as of GTFS-ServiceChanges v3.1.)
+
 If there was no original trip, the `trip_update` value makes no reference to an original trip:
 ```json
 {
@@ -565,32 +567,17 @@ Why should we *not* do this?
 - What other designs have been considered and what is the rationale for not choosing them?
 - What is the impact of not doing this?
 
-## Alternative: Glides pushes new information to RTR
+## Alternative: protobuf instead of JSON
 
-## Alternative: Glides pushes new information to an AWS Kinesis stream
-
-## Alternative: GTFS-ServiceChanges over protobuf
-
-## Alternative: GTFS-realtime + internal extensions
-
-## Alternative: internal JSON
+GTFS-realtime is [canonically defined](https://github.com/google/transit/tree/master/gtfs-realtime/spec/en#data-format) using Google's protobuf binary encoding format, and so we could use that encoding instead of JSON for Glides trainsheet data.
+However, the only advantage to this encoding over JSON is bandwidth usage, and we do not need to optimize for bandwidth usage between servers.
+As such, JSON as a human-readable and easily extensible encoding makes more sense here than protobuf does.
 
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal. A few examples of what
-this can include are:
-
-- Can we learn something about this proposal from other projects in CTD?
-- Can we learn something about this proposal from other transit agencies?
-- Can we learn something about this proposal from past experiences in other jobs or projects?
-
-This section is intended to encourage you as an author to think about the lessons from other places,
-and provide readers of your RFC with a fuller picture.
-
-If there is no prior art, that is fine.
-
-Note that while precedent is some motivation, it does not on its own motivate an RFC.
+The CloudEvents format was selected in [RFC 4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) for passing OCS data from Trike to RTR.
+Amazon Kinesis was selected in [RFC 5](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md) for passing OCS data from Trike to RTR.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -600,6 +587,67 @@ Note that while precedent is some motivation, it does not on its own motivate an
   before stabilization?
 - What related issues do you consider out of scope for this RFC that could be addressed in the
   future independently of the solution that comes out of this RFC?
+
+## GTFS-realtime + GTFS-ServiceChanges vs Realtime Edits
+
+### GTFS-realtime + GTFS-ServiceChanges
+
+Advantages:
+- Can start driving broader adoption of GTFS-ServiceChanges and maybe get GTFS-NewTrips added to the GTFS-realtime specification itself
+
+Non-advantages:
+- Data is already in the right format to be incorporated into public-facing predictions (not an advantage because data will need to be post-processed and incorporated into calculated predictions anyway, so it can't be used verbatim, making its initial format less relevant)
+
+Disadvantages:
+- Not designed around partial records: we only use certain fields, but the sets of fields we use in various circumstances become complicated to manage
+
+### Realtime Edits
+
+Advantages:
+- Explicit event types that match our needs
+- [Information is preserved more or less as entered and can be passed to e.g. Lamp without having to reconstruct the user's intent from GTFS-realtime data](https://github.com/mbta/technology-docs/pull/12#issuecomment-1093090735)
+
+Disadvantages:
+- Can't be used as is for vendor communication
+- Does not advance GTFS-ServiceChanges spec proposal
+
+## Pull/Push
+
+In terms of how trainsheets data from Glides gets to RTR and other services, there are three main options: Glides publishes a feed to Amazon S3 that RTR pulls on an interval, Glides pushes events to RTR directly via an HTTP POST request, or Glides pushes events to RTR via an event broker like Amazon Kinesis or Amazon SQS.
+
+### Pull
+
+Glides stores a feed containing all currently-relevant information in Amazon S3 and RTR and other consumer services poll that feed on some schedule.
+
+Advantages:
+- Straightforward to manually inspect current feed data
+- Straightforward to connect RTR development instances to Glides production data
+- Matches GTFS-realtime architecture (only relevant if using GTFS-realtime as interchange format)
+
+Disadvantages:
+- RTR etc have to tune polling interval to get data at a reasonable pace without wasting resources
+
+### Direct Push
+
+When a Glides user makes a relevant change to trainsheets, Glides sends an HTTP POST request to RTR and other consumer services.
+
+Advantages:
+- New data is immediately presented to consumer services
+
+Disadvantages:
+- Glides need a hand-maintained list of URLs to POST to, so new consumers require maintenace effort from Glides, and restructured consumers require deployment coordination
+- Needs access controls which we'd have to implement ourselves
+
+### Event Broker Push
+
+When a Glides user makes a relevant change to trainsheets, Glides submits an event to an Amazon Kinesis event stream or an Amazon SQS event queue.
+
+Advantages:
+- New data is promptly presented to consumer services
+
+Disadvantages:
+- Amazon Kinesis is designed for event streams with a substantially larger throughput than will be present here, so it might be overkill for this use case
+- Amazon SQS is designed for messages that only need to be consumed once (only relevant if there may be more than one consumer service)
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
