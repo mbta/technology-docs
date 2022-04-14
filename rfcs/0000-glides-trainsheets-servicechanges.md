@@ -599,6 +599,7 @@ Non-advantages:
 - Data is already in the right format to be incorporated into public-facing predictions (not an advantage because data will need to be post-processed and incorporated into calculated predictions anyway, so it can't be used verbatim, making its initial format less relevant)
 
 Disadvantages:
+- Less responsive to newly discovered requirements that aren't met by the current standard/proposal (we can add our own fields if we have to, but that defeats the purpose of sticking with the standard/proposal)
 - Not designed around partial records: we only use certain fields, but the sets of fields we use in various circumstances become complicated to manage
 
 ### Realtime Edits
