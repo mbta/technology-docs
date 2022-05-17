@@ -46,6 +46,8 @@ We use the following patterns for resources:
 - IAM groups: kebab-case
 - IAM users: kebab-case  (but prefer IAM roles whenever possible)
 - EC2 security groups: kebab-case
+- Cognito user pools: kebab-case
+- Cognito app clients: kebab-case
 - Glue databases/tables: snake_case
 	- https://docs.aws.amazon.com/athena/latest/ug/glue-best-practices.html#schema-names
 
