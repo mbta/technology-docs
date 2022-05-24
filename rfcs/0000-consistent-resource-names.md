@@ -17,7 +17,7 @@ As CTD has grown, multiple teams have independently named their projects and the
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Within CTD, we use one of the following patterns for naming resources and :
+Within CTD, we use one of the following patterns for naming projects and resources:
 - kebab-case: all lowercase, separated by hyphens
 - snake_case: all lowercase, separated by underscores
 - camelCase: first word is lower case, other words are Title case with no separation
@@ -38,6 +38,7 @@ We use the following patterns for resources:
 	- https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
 - Terraform resources: kebab-case
 - Terraform modules: kebab-case
+- Terraform variables: snake_case
 - ECS clusters: kebab-case
 - ECS applications: kebab-case
 - Secrets Manager secret names: kebab-case
@@ -55,7 +56,8 @@ Abbreviations should be treated as a single word and have their case ignored: gt
 
 **Exceptions**: 
 - OpenTripPlanner (and other forked repositories) should use original repository name and naming conventions
-- AWS-created IAM roles are PascalCase (but prefer creating/managing our own via Terraform
+- Elixir module can keep the capitalization of abbreviations (gtfs_documentation.ex -> GTFSDocumentation)
+- AWS-created IAM roles are PascalCase (but prefer creating/managing our own via Terraform)
 - IAM users for MBTA staff use their AD username
 - IAM users for external people use their e-mail address
 
@@ -86,6 +88,7 @@ Existing CTD repositories were considered for these recommendations, as were our
 
 - Are there any other types of resources where we should be standardizing on names?
 - Should we be standardizing even further (Credo configurations, Eslint packages, &c)?
+- Terraform resources use camel_case: should we be using that ourselves?
 - Should documentation repos be allowed to use dashes? (gtfs-documentation and technology-docs, for example)
 
 # Future possibilities
