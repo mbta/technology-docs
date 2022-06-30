@@ -36,9 +36,8 @@ We use the following patterns for resources:
 	- https://www.ssl.com/faqs/underscores-not-allowed-in-domain-names/
 - S3 buckets: kebab-case
 	- https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
-- Terraform resources: kebab-case
-- Terraform modules: kebab-case
-- Terraform variables: snake_case
+- Terraform names: snake_case
+        - https://www.terraform-best-practices.com/naming
 - ECS clusters: kebab-case
 - ECS applications: kebab-case
 - Secrets Manager secret names: kebab-case
@@ -61,7 +60,7 @@ Abbreviations should be treated as a single word and have their case ignored: gt
 - IAM users for MBTA staff use their AD username
 - IAM users for external people use their e-mail address
 
-This RFC does not intend to force existing applications to rename existing files: only to provide standardization as CTD continues to grow and create new projects.
+This RFC does not intend to force existing applications to rename existing names: only to provide standardization as CTD continues to grow and create new projects.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -88,7 +87,6 @@ Existing CTD repositories were considered for these recommendations, as were our
 
 - Are there any other types of resources where we should be standardizing on names?
 - Should we be standardizing even further (Credo configurations, Eslint packages, &c)?
-- Terraform resources use camel_case: should we be using that ourselves?
 - Should documentation repos be allowed to use dashes? (gtfs-documentation and technology-docs, for example)
 
 # Future possibilities
