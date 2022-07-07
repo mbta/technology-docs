@@ -2,7 +2,7 @@
 - Start Date: 2022-05-16
 - RFC PR: [mbta/technology-docs#13](https://github.com/mbta/technology-docs/pull/13)
 - Asana task: [RFC: rationalizing how we name projects](https://app.asana.com/0/1113179098808463/1202191100361265/f)
-- Status: Proposed
+- Status: Accepted
 
 # Summary
 [summary]: #summary
