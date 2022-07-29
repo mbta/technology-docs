@@ -40,6 +40,7 @@ We use the following patterns for resources:
         - https://www.terraform-best-practices.com/naming
 - ECS clusters: kebab-case
 - ECS applications: kebab-case
+- ECR repositories: kebab-case
 - Secrets Manager secret names: kebab-case
 - VPC names: kebab-case
 - IAM roles: kebab-case
