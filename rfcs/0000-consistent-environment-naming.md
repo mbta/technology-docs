@@ -21,7 +21,7 @@ Environments are named in `kebab-case`, following the convention `[name of appli
 
 - `prod`: the production environment.
 - `stage`: used for final integration testing and monitoring for errors before deploying changes to production. Often, merging a PR into the `main` / `master` branch will be set up to automatically initiate a deploy to the application's `stage` environment.
-- `test`: used as the target environment for some sort of recurring automated testing, such as end-to-end web application testing or load testing. Accepts an optional modifier specifying what testing tool the environment is for (for instance, `test-cypress` or `test-locust`).
+- `test`: used as the target environment for some sort of recurring automated testing, such as end-to-end web application testing or load testing. Accepts an optional modifier specifying what testing tool the environment is for (for instance, `test-cypress` or `test-locust`). This is presently a hypothetical use case, albeit one that has been discussed from time to time.
 - `dev-[color]`: for experimenting with and evaluating features under active development, generally in their own branch. Potential uses include: allowing a developer to experiment with code that relates to functionality that's hard to replicate locally, providing a space for other team members to evaluate and sign off on a feature before it is merged, and collecting application-specific metrics on a particular change before deciding whether to merge it. `[color]` can be the color of any MBTA rapid transit line (`green`, `red`, `orange`, `blue`, or `silver`).
 
 ## Data pipeline
@@ -35,10 +35,16 @@ Given that CTD maintains many interrelated applications that exchange data, the 
 
 As noted, there are cases where there is a general default guidance for which data sources to use, but there is room for variation. When deviating from the default, this should be documented [...].
 
+Some data sources aren't CTD-maintained applications, but rather outside systems we interface with. Examples include OCS messages for subway tracking, or Alerts UI for creating and managing alerts. In these cases, the names of the environments won't necessarily match ours, and there may not be as many development environments as we have, or even any non-production environment at all. In these situations, engineers should make a judgement call as to which one is the best match in each case.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+Having explained the naming scheme above, this section will go into more detail about the actual transition.
+
 The main implementation step that will be needed is that applications with existing `dev` environments will need to rename them to `stage`. It may be possible to do this in-place without destroying existing AWS resources, though in some cases it may be easier to simply create a new environment in Terraform and delete the old one.
+
+In addition to the names of AWS resources and hostnames, care should be taken to make sure that any resources that a given application environment publishes (for example, an enhanced GTFS-rt feed in JSON format uploaded to S3) and renamed accordingly.
 
 Applications that currently have a `dev` but no `dev-[color]` environment are generally encouraged to also add at least one `dev-[color]` environment if they are still under active development.
 
