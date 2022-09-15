@@ -20,7 +20,7 @@ Non-production environments for our applications are generally named with some v
 Environments are named in `kebab-case`, following the convention `[name of application]-[modifier]`. Available modifiers are as follows, with a brief description of their use case:
 
 - `prod`: the production environment.
-- `stage`: used for final integration testing and monitoring for errors before deploying changes to production. Often, merging a PR into the `main` / `master` branch will be set up to automatically initiate a deploy to the application's `stage` environment. There should be one stage environment per application.
+- `staging`: used for final integration testing and monitoring for errors before deploying changes to production. Often, merging a PR into the `main` / `master` branch will be set up to automatically initiate a deploy to the application's `staging` environment. There should be one stage environment per application.
 - `test`: used as the target environment for some sort of recurring automated testing, such as end-to-end web application testing or load testing. Accepts an optional modifier specifying what testing tool the environment is for (for instance, `test-cypress` or `test-locust`). This is presently a hypothetical use case, albeit one that has been discussed from time to time.
 - `dev-[color]`: for experimenting with and evaluating features under active development, generally in their own branch. Potential uses include: allowing a developer to experiment with code that relates to functionality that's hard to replicate locally, providing a space for other team members to evaluate and sign off on a feature before it is merged, and collecting application-specific metrics on a particular change before deciding whether to merge it. `[color]` can be the color of any MBTA rapid transit line (`green`, `red`, `orange`, `blue`, or `silver`).
 
@@ -29,11 +29,11 @@ Environments are named in `kebab-case`, following the convention `[name of appli
 Given that CTD maintains many interrelated applications that exchange data, the output of other applications is often very important to determining how a given application will behave. As such, it is important for testing purposes that engineers and other team members understand these relationships, and that the data sources for a given environment properly facilitate its usage. Given these considerations:
 
 - `prod` environments should only ever get their data from other `prod` environments.
-- `stage` environments should only ever get their data from other `stage` environments.
-- `test` environments should generally default to getting their data from `stage` environments. In cases where there is some end-to-end test process across multiple applications, it may make sense to have one `test` environment get its data from another application's `test` environment.
-- `dev-[color]` environments should generally default to getting their data from `stage` environments. When multiple teams are working on interrelated features (for instance, TRC is introducing a data source and dotcom is making updates to display that data), it may make sense to point one `dev-[color]` environment to another application's `dev-[color]` environment.
+- `staging` environments should only ever get their data from other `staging` environments.
+- `test` environments should generally default to getting their data from `staging` environments. In cases where there is some end-to-end test process across multiple applications, it may make sense to have one `test` environment get its data from another application's `test` environment.
+- `dev-[color]` environments should generally default to getting their data from `staging` environments. When multiple teams are working on interrelated features (for instance, TRC is introducing a data source and dotcom is making updates to display that data), it may make sense to point one `dev-[color]` environment to another application's `dev-[color]` environment.
 
-As noted, there are cases where there is a general default guidance for which data sources to use, but there is room for variation. When deviating from the default, this should be documented [...].
+As noted, there are cases where there is a general default guidance for which data sources to use, but there is room for variation. When deviating from the default, make sure that this is documented in the [Miro board](https://miro.com/app/board/uXjVOcLVgUY=/) that shows how environments talk to each other.
 
 Some data sources aren't CTD-maintained applications, but rather outside systems we interface with. Examples include OCS messages for subway tracking, or Alerts UI for creating and managing alerts. In these cases, the names of the environments won't necessarily match ours, and there may not be as many development environments as we have, or even any non-production environment at all. In these situations, engineers should make a judgement call as to which one is the best match in each case.
 
@@ -42,7 +42,7 @@ Some data sources aren't CTD-maintained applications, but rather outside systems
 
 Having explained the naming scheme above, this section will go into more detail about the actual transition.
 
-The main implementation step that will be needed is that applications with existing `dev` environments will need to rename them to `stage`. It may be possible to do this in-place without destroying existing AWS resources, though in some cases it may be easier to simply create a new environment in Terraform and delete the old one.
+The main implementation step that will be needed is that applications with existing `dev` environments will need to rename them to `staging`. It may be possible to do this in-place without destroying existing AWS resources, though in some cases it may be easier to simply create a new environment in Terraform and delete the old one.
 
 In addition to the names of AWS resources and hostnames, care should be taken to make sure that any resources that a given application environment publishes (for example, an enhanced GTFS-rt feed in JSON format uploaded to S3) and renamed accordingly.
 
@@ -56,13 +56,13 @@ Environment names will need to be updated in a lot of places (Terraform, GitHub 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Regarding the actual choice of names, `stage` is probably the one most open to other suggestions. Ultimately, there are a few reasons I went with `stage` as opposed to some other name:
+Regarding the actual choice of names, `staging` is probably the one most open to other suggestions. Ultimately, there are a few reasons I went with `staging` as opposed to some other name:
 
 - It emphasizes this environment's role in the merge and deploy process.
 - I considered `test` as well, but since this can imply some more specific kind of testing is going on rather than simply running and monitoring the application, I opted to instead use that term for future hypothetical environments for supporting automated testing tools.
 - Another possibility considered was `qa`. However, most teams perform validation and QA of features before merging. In addition, we don't have a strong reliance on manual QA or a separate QA discipline to begin with, so it's not a widely-used term in CTD.
 
-As for the decisions around data pipeline, my goal was to at least provide some defaults that keep things simple in the default case while providing flexibility where appropriate. Currently, when creating a new dev environment, most decisions about which version of the API or other data sources to point to are somewhat arbitrary. Having a clean distinction between `stage` and development environments that are intended for more interactive, but also ephemeral, use cases makes it clearer that those should be the default data sources for most non-prod environments.
+As for the decisions around data pipeline, my goal was to at least provide some defaults that keep things simple in the default case while providing flexibility where appropriate. Currently, when creating a new dev environment, most decisions about which version of the API or other data sources to point to are somewhat arbitrary. Having a clean distinction between `staging` and development environments that are intended for more interactive, but also ephemeral, use cases makes it clearer that those should be the default data sources for most non-prod environments.
 
 # Prior art
 [prior-art]: #prior-art
