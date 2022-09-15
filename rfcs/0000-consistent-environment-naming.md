@@ -29,7 +29,7 @@ Environments are named in `kebab-case`, following the convention `[name of appli
 Given that CTD maintains many interrelated applications that exchange data, the output of other applications is often very important to determining how a given application will behave. As such, it is important for testing purposes that engineers and other team members understand these relationships, and that the data sources for a given environment properly facilitate its usage. Given these considerations:
 
 - `prod` environments should only ever get their data from other `prod` environments.
-- `staging` environments should only ever get their data from other `staging` environments.
+- `staging` environments should only ever get their data from other `staging` environments or `prod` environments, depending on which is most appropriate for monitoring application stability.
 - `test` environments should generally default to getting their data from `staging` environments. In cases where there is some end-to-end test process across multiple applications, it may make sense to have one `test` environment get its data from another application's `test` environment.
 - `dev-[color]` environments should generally default to getting their data from `staging` environments. When multiple teams are working on interrelated features (for instance, TRC is introducing a data source and dotcom is making updates to display that data), it may make sense to point one `dev-[color]` environment to another application's `dev-[color]` environment.
 
