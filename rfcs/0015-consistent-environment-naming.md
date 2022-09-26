@@ -24,6 +24,8 @@ Environments are named in `kebab-case`, following the convention `[name of appli
 - `test`: used as the target environment for some sort of recurring automated testing, such as end-to-end web application testing or load testing. Accepts an optional modifier specifying what testing tool the environment is for (for instance, `test-cypress` or `test-locust`). This is presently a hypothetical use case, albeit one that has been discussed from time to time.
 - `dev-[color]`: for experimenting with and evaluating features under active development, generally in their own branch. Potential uses include: allowing a developer to experiment with code that relates to functionality that's hard to replicate locally, providing a space for other team members to evaluate and sign off on a feature before it is merged, and collecting application-specific metrics on a particular change before deciding whether to merge it. `[color]` can be the color of any MBTA rapid transit line (`green`, `red`, `orange`, `blue`, or `silver`).
 
+Upon acceptance of this RFC, the New Application Checklist will be updated to dictate use of this new naming scheme. Converting the naming of existing environments to reflect this scheme will be gently encouraged but not required on any particular timeline.
+
 ## Data pipeline
 
 Given that CTD maintains many interrelated applications that exchange data, the output of other applications is often very important to determining how a given application will behave. As such, it is important for testing purposes that engineers and other team members understand these relationships, and that the data sources for a given environment properly facilitate its usage. Given these considerations:
@@ -74,8 +76,6 @@ CTD has already been using `dev-green` as an environment name, as well as `dev-b
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Will there be a mandatory transition requiring all teams to update the naming of their existing application environments to conform with this RFC?
-- If this is mandatory, what sort of timeline will it happen on and how will it be enforced?
 - Will there be any impact on non-production environments of the various vendors that interact with our data pipiline, like Swiftly?
 
 # Future possibilities
