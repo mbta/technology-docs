@@ -44,7 +44,7 @@ Some data sources aren't CTD-maintained applications, but rather outside systems
 
 Having explained the naming scheme above, this section will go into more detail about the actual transition.
 
-The main implementation step that will be needed is that applications with existing `dev` environments will need to rename them to `staging`. It may be possible to do this in-place without destroying existing AWS resources, though in some cases it may be easier to simply create a new environment in Terraform and delete the old one.
+The main implementation step that will be needed is that applications with existing `dev` environments will need to rename them to `staging`. The easiest, and recommended, approach is to simply create a new environment in Terraform under the new name and delete the old one. If there is any application state in a database that needs to be carried over, this can be handled by using this [process to snapshot and restore](https://github.com/mbta/wiki/blob/master/devops/rds-database-maintenance.md#snapshot--restore) the database contents. Even for many applications with a database, though, the database contents on non-production environments are expendable and this step can be skipped.
 
 In addition to the names of AWS resources and hostnames, care should be taken to make sure that any resources that a given application environment publishes (for example, an enhanced GTFS-rt feed in JSON format uploaded to S3) and renamed accordingly.
 
