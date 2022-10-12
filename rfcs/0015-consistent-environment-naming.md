@@ -48,7 +48,7 @@ The main implementation step that will be needed is that applications with exist
 
 In addition to the names of AWS resources and hostnames, care should be taken to make sure that any resources that a given application environment publishes (for example, an enhanced GTFS-rt feed in JSON format uploaded to S3) and renamed accordingly.
 
-Applications that currently have a `dev` but no `dev-[color]` environment are generally encouraged to also add at least one `dev-[color]` environment if they are still under active development.
+Applications that have a `staging` but no `dev-[color]` environment are generally encouraged to also add at least one `dev-[color]` environment if they are still under active development.
 
 # Drawbacks
 [drawbacks]: #drawbacks
