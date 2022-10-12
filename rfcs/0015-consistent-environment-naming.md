@@ -76,7 +76,7 @@ CTD has already been using `dev-green` as an environment name, as well as `dev-b
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Will there be any impact on non-production environments of the various vendors that interact with our data pipiline, like Swiftly?
+- Will there be any impact on non-production environments of the various vendors that interact with our data pipeline, like Swiftly?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
