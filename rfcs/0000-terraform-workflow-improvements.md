@@ -456,7 +456,7 @@ The code owners for each application can include engineering team leads, team me
 
 ##### Continuous Integration &amp; Testing
 
-- Module changes are first [tested in isolation][scalr-workflow-module-testing] and [applied in the development/staging context][calr-workflow-development-staging]
+- Module changes are first [tested in isolation][scalr-workflow-module-testing] and [applied in the development/staging context][scalr-workflow-development-staging]
 - Engineer updates module version or ref in `aws-ctd-prod-apps` root module
 - Engineer pushes changes to GitHub branch
 - GitHub Actions workflow runs:
@@ -776,7 +776,7 @@ One major unresolved question is the timeline for implementing all the improveme
 Other questions for the reader:
 
 - Is the proposed [root module naming convention][root-module-naming-convention] sensible and sufficiently comprehensive?
-- Does the [isolated module testing workflow][module-testing-detailed] make sense? Does it seem easy enough to carry out?
+- Does the [isolated module testing workflow][reference-module-testing] make sense? Does it seem easy enough to carry out?
 - How aggressive should we be about [standardizing on infrastructure component modules][guide-standardization] for ECS and RDS across all applications/teams?
 - How aggressive should we be about [versioning and publishing application modules][guide-module-versioning] for open-source applications?
 - If changes to non-versioned application modules can spill over into other modules, as noted in the [Scalr Workflow for Module Testing][scalr-workflow-module-testing], is that enough of a reason to push to version and publish all application modules?
