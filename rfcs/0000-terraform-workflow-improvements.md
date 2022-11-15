@@ -588,7 +588,7 @@ The [Proposed approach][guide-module-testing] is relatively easy to implement fo
 
 [Terratest](https://terratest.gruntwork.io/) is an alternative testing framework for Terraform, but it requires writing tests in Go, which is a language that CTD has relatively little experience with, and the Infrastructure team in particular has none.
 
-HashiCorp has documented their own [Module Testing Experiment](https://developer.hashicorp.com/terraform/language/modules/testing-experiment) that's similar in principle to our proposed workflow. It implements a `terraform test` command that carries out a testing workflow similar to [the one proposed in this document][reference-module-testing]. The documentation is explicit about their workflow being experimental and likely to change in the future, so it's yet mature enough for our needs. If and when it does become a more established feature, it should be relatively easy to layer it on top of our proposed workflow.
+HashiCorp has documented their own [Module Testing Experiment](https://developer.hashicorp.com/terraform/language/modules/testing-experiment) that's similar in principle to our proposed workflow. It implements a `terraform test` command that carries out a testing workflow similar to [the one proposed in this document][reference-module-testing]. The documentation is explicit about their workflow being experimental and likely to change in the future, so it's not yet mature enough for our needs. If and when it does become a more established feature, it should be relatively easy to layer it on top of our proposed workflow.
 
 ## Alternatives to Standardizing Infrastructure Components
 [alternatives-standardization]: #alternatives-to-standardizing-infrastructure-components
