@@ -235,42 +235,48 @@ We'll also need to implement a new naming convention for root modules to keep th
 
 Terraform's official [naming convention for published modules][terraform-module-publishing] is `terraform-<PROVIDER>-<NAME>`, where `<NAME>` can contain additional hyphens. Since our own root modules won't be published to Terraform's public registry, we can omit the `terraform-` prefix and use `<PROVIDER>-<NAME>` as a base convention, where `<NAME>` can contain any of the following:
 
-- AWS account nickname (e.g. `mbta-ctd-test`, `mbta-ctd-prod`, or preferably a more succinct version that eliminates the `mbta-` prefix)
+- AWS account nickname (e.g. `mbta-ctd-test`, `mbta-ctd-main`, or preferably a more succinct version that eliminates the `mbta-` prefix)
 - Team name (prefixed with `team-`)
 - Environment context (e.g. `dev`, `staging`, `prod`) - this overlaps with AWS account nickname, so we may want to discourage the use of both at the same time
 - Component descriptor of the type/category of resources the module is intended to contain, if it's one of multiple modules for the particular provider/account/context (e.g. `base`, `bootstrap`, `restricted`)
 - Nothing (in cases where one module encompasses all of a provider's configuration)
 
-Root modules associated with the "CTD Production" AWS account that should be renamed: _(note that our production AWS account is currently named "mbtacomsupport", but we are hoping to rename it to "mbta-ctd-prod" soon)_
+A side-note regarding the AWS account nicknames: Our main AWS account is currently named "mbtacomsupport", but we are hoping to [rename it](https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-alias.html) soon. We toyed with the name "mbta-ctd-prod", but since the account also contains development/staging resources&mdash;which can't reasonably be provisioned into their own separate "development/staging" AWS account&mdash;we've opted to recommend the name "mbta-ctd-main". That name is open to debate, however.
 
-- `bootstrap` → `aws-ctd-prod-bootstrap`
-- `global` → `aws-ctd-prod-base`
+#### Proposed Module Names
+
+With all the above in mind, the following are the proposed names for all existing and future root modules. (Note that the naming convention for child modules is different, and is covered in the [module versioning][guide-module-versioning] section.)
+
+Root modules associated with the "CTD Production" AWS account that should be renamed:
+
+- `bootstrap` → `aws-ctd-main-bootstrap`
+- `global` → `aws-ctd-main-base`
 - `dev` → multiple modules:
   - move application development/staging resources to team-based modules:
-    - `aws-ctd-prod-team-dataplatform`
-    - `aws-ctd-prod-team-glides`
-    - `aws-ctd-prod-team-lamp`
-    - `aws-ctd-prod-team-pass-programs`
-    - `aws-ctd-prod-team-screens`
-    - `aws-ctd-prod-team-trc`
-    - `aws-ctd-prod-team-website`
-  - move base dev resources to `aws-ctd-prod-base`
+    - `aws-ctd-main-team-dataplatform`
+    - `aws-ctd-main-team-glides`
+    - `aws-ctd-main-team-lamp`
+    - `aws-ctd-main-team-pass-programs`
+    - `aws-ctd-main-team-screens`
+    - `aws-ctd-main-team-trc`
+    - `aws-ctd-main-team-website`
+  - move base dev resources to `aws-ctd-main-base`
 - `onprem_dev` → `aws-onprem-dev`
 - `onprem_prod` → `aws-onprem-prod`
-- `prod` → `aws-ctd-prod-apps` (to remain as a single module for now)
-- `restricted` → `aws-ctd-prod-restricted`
+- `prod` → `aws-ctd-main-apps` (to remain as a single module for now)
+- `restricted` → `aws-ctd-main-restricted`
 
-Modules to remain as-is:
+Root modules to remain as-is:
 
 - `scalr`
 
-New modules for "mbta-ctd-test" AWS account:
+New root modules for "mbta-ctd-test" AWS account:
 
 - `aws-ctd-test-base`
 - `aws-ctd-test-bootstrap`
 - `aws-ctd-test-restricted`
 
-Possible future modules:
+Possible future root modules:
 
 - `github`
 - `sentry`
@@ -442,7 +448,7 @@ Each root module will have a GitHub-integrated Scalr workspace. Scalr will autom
 
 Production will mirror the development/staging context, with a few notable differences:
 
-1. For the time being, all resources will remain in the central `prod` module, which will be [renamed][root-module-naming-convention] to `aws-ctd-prod-apps` and have its own GitHub-integrated Scalr workspace.
+1. For the time being, all resources will remain in the central `prod` module, which will be [renamed][root-module-naming-convention] to `aws-ctd-main-apps` and have its own GitHub-integrated Scalr workspace.
 2. All calls to un-versioned modules will pinned to particular git hashes instead of relative paths, in order to protect the production context from changes that are made to un-versioned modules.
 
 As before, Scalr will automatically run `terraform plan` when a pull request is opened, and attempt to automatically run `terraform apply` on merge.
@@ -450,14 +456,14 @@ As before, Scalr will automatically run `terraform plan` when a pull request is 
 It is a security requirement to have an extra layer of protection on production systems, that any changes to those system require explicit approval. CTD typically handles this requirement during the code review stage. For Terraform changes, we can use the same approach, provided that sufficient protections are in place to guarantee that changes can't circumvent the code review process. Those protections will include:
 
 - [Branch protection rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches) for the default branch of the devops repo
-- [A `CODEOWNERS` file](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) listing the required reviewers for each CTD application's Terraform configuration file within the `aws-ctd-prod-apps` (née `prod`) root module
+- [A `CODEOWNERS` file](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) listing the required reviewers for each CTD application's Terraform configuration file within the `aws-ctd-main-apps` (née `prod`) root module
 
 The code owners for each application can include engineering team leads, team members, and/or the Infrastructure team.
 
 ##### Continuous Integration &amp; Testing
 
 - Module changes are first [tested in isolation][scalr-workflow-module-testing] and [applied in the development/staging context][scalr-workflow-development-staging]
-- Engineer updates module version or ref in `aws-ctd-prod-apps` root module
+- Engineer updates module version or ref in `aws-ctd-main-apps` root module
 - Engineer pushes changes to GitHub branch
 - GitHub Actions workflow runs:
   - `terraform validate`
