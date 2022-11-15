@@ -82,7 +82,7 @@ To address the scaling issues and pain points called out in the [summary][summar
 The following subsections detail each improvement broadly. For specific implementation details, see the [reference-level explanation][reference-level-explanation] section below.
 
 ## 1. Smaller, More Focused Modules
-[guide-module-splitting]: #smaller-more-focused-modules
+[guide-module-splitting]: #1-smaller-more-focused-modules
 
 _Too Many Cooks &rarr; Multiple Kitchens_
 
@@ -99,7 +99,7 @@ A sensible and straightforward solution is to split development resources by tea
 For more details on how this will be accomplished, see the corresponding [reference-level explanation][reference-module-splitting].
 
 ## 2. Testing Workflow
-[guide-module-testing]: #testing-workflow
+[guide-module-testing]: #2-testing-workflow
 
 _Test in isolation_
 
@@ -120,7 +120,7 @@ To truly enforce the "isolation" requirement, module testing will be done in a f
 For details on the proposed testing process, see the corresponding [reference-level explanation][reference-module-testing].
 
 ## 3. Standardize Components
-[guide-standardization]: #standardize-components
+[guide-standardization]: #3-standardize-components
 
 _Don't repeat yourself_
 
@@ -143,7 +143,7 @@ Relatedly, the `ctd-ecs-app` module introduced the concept of a `context` var th
 See the corresponding [reference-level explanation][reference-standardization] for related recommendations.
 
 ## 4. Version and Publish Modules
-[guide-module-versioning]: #version-and-publish-modules
+[guide-module-versioning]: #4-version-and-publish-modules
 
 _Modules as immutable artifacts_
 
@@ -169,7 +169,7 @@ In summary: We should prioritize setting up a versioning and publishing workflow
 For details on the module versioning and publishing workflow, see the corresponding [reference-level explanation][reference-module-versioning].
 
 ## 5. Terraform Automation
-[guide-automation]: #terraform-automation
+[guide-automation]: #5-terraform-automation
 
 _Automate as much as possible_
 
@@ -192,7 +192,7 @@ Note that CTD's ability to procure Scalr is not yet confirmed for FY23, so there
 For details on how Scalr will be configured, and the proposed CI/CD workflows, see the corresponding [reference-level explanation][reference-automation]. There are also some caveats outlined in the [drawbacks section][drawbacks-scalr].
 
 ## 6. User Permissions
-[guide-permissions]: #user-permissions
+[guide-permissions]: #6-user-permissions
 
 _Strike a better balance_
 
@@ -219,7 +219,7 @@ the detailed proposal makes those examples work.
 -->
 
 ## 1. Splitting Root Modules By Team
-[reference-module-splitting]: #splitting-root-modules-by-team
+[reference-module-splitting]: #1-splitting-root-modules-by-team
 
 To optimize the management of development and staging resources, the `dev` root module will be split into multiple root modules that are organized by team. Once a new root module is set up for each engineering team, we'll need to:
 
@@ -277,7 +277,7 @@ Possible future modules:
 - `splunk`
 
 ## 2. Module Testing, Detailed
-[reference-module-testing]: #module-testing-detailed
+[reference-module-testing]: #2-module-testing-detailed
 
 As noted in the [guide-level explanation][guide-module-testing], we will set up testing for each application and infrastructure component child module by creating a `test/` module within each module's directory. The test module will define any dependent resources required by the module, and then call the module itself. It could even call other application modules if needed.
 
@@ -307,7 +307,7 @@ In order to be able to test ECS applications, we will need to figure out how to 
 As noted in the [guide-level explanation][guide-module-testing], testing will happen in the separate `mbta-ctd-test` AWS account. This account will be accessed using "assume role" permissions that full access to manage required AWS resources. The assumed role won't have full administrator access, but we'll manage the list of permitted services via IAM policies.
 
 ## 3. Standardizing on Infrastructure Component Modules
-[reference-standardization]: #standardizing-on-infrastructure-component-modules
+[reference-standardization]: #3-standardizing-on-infrastructure-component-modules
 
 As noted in the [guide-level explanation][guide-standardization], this is currently the most mature of the proposed improvements, in that the `ctd-ecs-app` and `ctd-rds-db` modules already exist and are seeing use. Aside from increasing adoption and carrying out the [testing workflow][guide-module-testing] and [module versioning][guide-module-versioning] recommendations, other improvements that will be beneficial include:
 
@@ -316,7 +316,7 @@ As noted in the [guide-level explanation][guide-standardization], this is curren
 - Standardizing on the use of the `context` variable
 
 ## 4. Module Versioning/Publishing
-[reference-module-versioning]: #module-versioning-publishing
+[reference-module-versioning]: #4-module-versioningpublishing
 
 As noted in the [guide-level explanation][guide-module-versioning], module versioning and publishing is something we will set up for all infrastructure component modules, but which should be considered optional for application modules. See also the [corresponding subsection under rationale and alternatives][alternatives-module-versioning].
 
@@ -347,7 +347,7 @@ Unfortunately this approach is not as advantageous as it seems. Some of the draw
 Given the drawbacks, storing application modules in application repos is not recommended at this time.
 
 ## 5. Automating Terraform
-[reference-automation]: #automating-terraform
+[reference-automation]: #5-automating-terraform
 
 As noted in the [guide-level explanation][guide-automation], our goal for automating Terraform is to procure Scalr. But in order to make optimal use of Scalr for Terraform automation, we need to understand where it will fit into our proposed workflows, and how best to configure it to suit our needs.
 
@@ -411,7 +411,7 @@ Once a new version of the module is published, the module version can be updated
 If module versioning is not employed, changes to the module will need to be applied immediately in any dependent root modules. In the development/staging context, this can be handled automatically by configuring [run triggers](https://docs.scalr.com/en/latest/workspaces.html#run-triggers) in the Scalr workspace. In the production context, however, there will be an extra layer of protection to ensure that changes don't impact production before they're ready to be applied there. This is described in more detail in the [production workflow section][scalr-workflow-production] below.
 
 #### Scalr Workflow for Applying Changes In Development/Staging Context
-[scalr-workflow-development-staging]: #scalr-workflow-for-applying-changes-in-development-staging-context
+[scalr-workflow-development-staging]: #scalr-workflow-for-applying-changes-in-developmentstaging-context
 
 Each root module will have a GitHub-integrated Scalr workspace. Scalr will automatically run `terraform plan` when a pull request is opened, and attempt to automatically run `terraform apply` on merge. It will also be possible to run `terraform plan` locally using Scalr's remote operation backend, but not `terraform apply`; this is to ensure that GitHub acts as the source of truth for controlling Terraform state.
 
@@ -484,7 +484,7 @@ The code owners for each application can include engineering team leads, team me
 In order to ensure that sensitive changes&mdash;such as those which affect IAM resources&mdash;can't be made without being properly vetted, we'll define OPA policies in Scalr that will check for changes to sensitive resource types. For more detail on this topic, see the [Balancing User Permissions][reference-permissions] section below.
 
 ## 6. Balancing User Permissions
-[reference-permissions]: #balancing-user-permissions
+[reference-permissions]: #6-balancing-user-permissions
 
 As noted in the [guide-level explanation][guide-permissions], our goal is to achieve an optimal balance of security and usability with Terraform and AWS. Achieving this goal effectively is somewhat dependent on our ability to delegate permissions to an automated system like Scalr.
 
