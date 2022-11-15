@@ -88,7 +88,7 @@ _Too Many Cooks &rarr; Multiple Kitchens_
 
 Since many applications have multiple development and staging environments, there are more resources overall to manage in the development context. Managing all these resources&mdash;over 1,600 at the time of this writing&mdash;in a single module makes Terraform run slower, since it has to refresh the state of all resources every time it's run. For that matter, non-production resources see more frequent changes than production to facilitate feature development, which means more Terraform runs, and each run requires locking the state for an extended period of time.
 
-A common approach with Terraform is to split configuration into multiple modules instead of managing everything in one central module. CTD already has multiple root modules for different types of configuration, but as we scale up, we need more.
+A common approach with Terraform is to split configuration into multiple modules instead of managing everything in one central module. This approach was recommended by every [Terraform automation][guide-automation] vendor we talked to, including HashiCorp. CTD already has multiple root modules for different types of configuration, but as we scale up, we need more.
 
 A sensible and straightforward solution is to split development resources by team. Doing so has many benefits:
 
