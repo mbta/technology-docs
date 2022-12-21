@@ -595,7 +595,7 @@ HashiCorp has documented their own [Module Testing Experiment](https://developer
 
 The [Proposed approach][guide-standardization] is already mostly implemented. It uses modules that we have mostly written in-house, though some components were copied from modules published in [Terraform's public registry](https://registry.terraform.io/).
 
-We could switch to using published published modules exclusively, or at least prefer them over the versions we maintain locally.This option was evaluated early on in the original Terraform implementation, but at the time it was unclear how stable each published module would be in the long term, and we were uncomfortable relying on public modules for critical infrastructure configuration. We feel that maintaining our own infrastructure components gives us more flexibility to configure modules how we need to.
+We could switch to using published modules exclusively, or at least prefer them over the versions we maintain locally. This option was evaluated early on in the original Terraform implementation, but at the time it was unclear how stable each published module would be in the long term, and we were uncomfortable relying on public modules for critical infrastructure configuration. We feel that maintaining our own infrastructure components gives us more flexibility to configure modules how we need to.
 
 ## Alternatives to Module Versioning and Publishing
 [alternatives-module-versioning]: #alternatives-to-module-versioning-and-publishing
