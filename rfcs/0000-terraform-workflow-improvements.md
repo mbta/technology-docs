@@ -261,8 +261,12 @@ Root modules associated with the "CTD Production" AWS account that should be ren
     - `aws-ctd-main-team-trc`
     - `aws-ctd-main-team-website`
   - move base dev resources to `aws-ctd-main-base`
-- `onprem_dev` → `aws-onprem-dev`
-- `onprem_prod` → `aws-onprem-prod`
+- `onprem_dev` → multiple modules:
+  - move SSM resources to `aws-ctd-main-base`
+  - move applications to team-based modules
+- `onprem_prod` → multiple modules:
+  - move SSM resources to `aws-ctd-main-base`
+  - move applications to `aws-ctd-main-apps` for now
 - `prod` → `aws-ctd-main-apps` (to remain as a single module for now)
 - `restricted` → `aws-ctd-main-restricted`
 
