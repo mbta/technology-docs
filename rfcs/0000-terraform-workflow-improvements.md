@@ -237,7 +237,7 @@ Terraform's official [naming convention for published modules][terraform-module-
 
 - AWS account nickname (e.g. `mbta-ctd-test`, `mbta-ctd-main`, or preferably a more succinct version that eliminates the `mbta-` prefix)
 - Team name (prefixed with `team-`)
-- Environment context (e.g. `dev`, `staging`, `prod`) - this overlaps with AWS account nickname, so we may want to discourage the use of both at the same time
+- Environment context (e.g. `dev`, `staging`, `prod`)
 - Component descriptor of the type/category of resources the module is intended to contain, if it's one of multiple modules for the particular provider/account/context (e.g. `base`, `bootstrap`, `restricted`)
 - Nothing (in cases where one module encompasses all of a provider's configuration)
 
