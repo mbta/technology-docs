@@ -266,8 +266,8 @@ Root modules associated with the "CTD Production" AWS account that should be ren
   - move applications to team-based modules
 - `onprem_prod` → multiple modules:
   - move SSM resources to `aws-ctd-main-base`
-  - move applications to `aws-ctd-main-apps` for now
-- `prod` → `aws-ctd-main-apps` (to remain as a single module for now)
+  - move applications to `aws-ctd-main-prod` for now
+- `prod` → `aws-ctd-main-prod` (to remain as a single module for now)
 - `restricted` → `aws-ctd-main-restricted`
 
 Root modules to remain as-is:
@@ -452,7 +452,7 @@ Each root module will have a GitHub-integrated Scalr workspace. Scalr will autom
 
 Production will mirror the development/staging context, with a few notable differences:
 
-1. For the time being, all resources will remain in the central `prod` module, which will be [renamed][root-module-naming-convention] to `aws-ctd-main-apps` and have its own GitHub-integrated Scalr workspace.
+1. For the time being, all resources will remain in the central `prod` module, which will be [renamed][root-module-naming-convention] to `aws-ctd-main-prod` and have its own GitHub-integrated Scalr workspace.
 2. All calls to un-versioned modules will pinned to particular git hashes instead of relative paths, in order to protect the production context from changes that are made to un-versioned modules.
 
 As before, Scalr will automatically run `terraform plan` when a pull request is opened, and attempt to automatically run `terraform apply` on merge.
@@ -460,14 +460,14 @@ As before, Scalr will automatically run `terraform plan` when a pull request is 
 It is a security requirement to have an extra layer of protection on production systems, that any changes to those system require explicit approval. CTD typically handles this requirement during the code review stage. For Terraform changes, we can use the same approach, provided that sufficient protections are in place to guarantee that changes can't circumvent the code review process. Those protections will include:
 
 - [Branch protection rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches) for the default branch of the devops repo
-- [A `CODEOWNERS` file](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) listing the required reviewers for each CTD application's Terraform configuration file within the `aws-ctd-main-apps` (née `prod`) root module
+- [A `CODEOWNERS` file](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) listing the required reviewers for each CTD application's Terraform configuration file within the `aws-ctd-main-prod` (née `prod`) root module
 
 The code owners for each application can include engineering team leads, team members, and/or the Infrastructure team.
 
 ##### Continuous Integration &amp; Testing
 
 - Module changes are first [tested in isolation][scalr-workflow-module-testing] and [applied in the development/staging context][scalr-workflow-development-staging]
-- Engineer updates module version or ref in `aws-ctd-main-apps` root module
+- Engineer updates module version or ref in `aws-ctd-main-prod` root module
 - Engineer pushes changes to GitHub branch
 - GitHub Actions workflow runs:
   - `terraform validate`
