@@ -117,6 +117,8 @@ A convention for module testing [recommended by members of the Terraform communi
 
 To truly enforce the "isolation" requirement, module testing will be done in a fully separate AWS account where we can carry out the creation and destruction of test resources independently from our existing infrastructure. This will help us avoid the possibility that testing resources interfere with production systems in any way.
 
+The overall goal of this process is to make it easy for any engineer to be able to test Terraform modules without having to perform that testing against the infrastructure running in our main AWS account. This workflow can be applied equally for [infrastructure component modules][guide-standardization] and application modules. The testing workflow may not need to be carried out every day, but it would be useful whenever there are any major changes to the module being proposed, such as adding or removing AWS resources, or making a change that requires replacing a resource.
+
 For details on the proposed testing process, see the corresponding [reference-level explanation][reference-module-testing].
 
 ## 3. Standardize Components
@@ -292,6 +294,8 @@ Possible future root modules:
 [reference-module-testing]: #2-module-testing-detailed
 
 As noted in the [guide-level explanation][guide-module-testing], we will set up testing for each application and infrastructure component child module by creating a `test/` module within each module's directory. The test module will define any dependent resources required by the module, and then call the module itself. It could even call other application modules if needed.
+
+Initially, the scope of testing accounted for in this workflow will be limited to confirming whether a Terraform module applies correctly in AWS. Actual application testing, including testing application's interaction with infrastructure, is still expected to happen within the dev/staging context. That said, there's nothing to prevent the possibility of extending this workflow in the future to facilitate end-to-end testing of applications in an isolated sandbox.
 
 ### Testing Workflow
 
