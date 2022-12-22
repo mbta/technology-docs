@@ -221,7 +221,9 @@ the detailed proposal makes those examples work.
 ## 1. Splitting Root Modules By Team
 [reference-module-splitting]: #1-splitting-root-modules-by-team
 
-To optimize the management of development and staging resources, the `dev` root module will be split into multiple root modules that are organized by team. Once a new root module is set up for each engineering team, we'll need to:
+To optimize the management of development and staging resources, the `dev` root module will be split into multiple root modules that are organized by team. Resources that are shared by some or all applications/teams will be moved to the `global` module, which will be renamed to `aws-ctd-main-base`. To facilitate references to these common resources, the `context` var will also move to the `aws-ctd-main-base` module, and will be defined as an [output value](https://developer.hashicorp.com/terraform/language/values/outputs) that can be accessed by team-based root modules.
+
+Once a new root module is set up for each engineering team, we'll need to:
 
 - Migrate each team's development and staging resources out of the `dev` module and into their new team-based module
 - Update references to dependent resources that remain in other modules to use data sources or [remote state](https://developer.hashicorp.com/terraform/language/state/remote-state-data)
@@ -315,6 +317,8 @@ In order to be able to test ECS applications, we will need to figure out how to 
 ### Isolated Testing Environment
 
 As noted in the [guide-level explanation][guide-module-testing], testing will happen in the separate `mbta-ctd-test` AWS account. This account will be accessed using "assume role" permissions that full access to manage required AWS resources. The assumed role won't have full administrator access, but we'll manage the list of permitted services via IAM policies.
+
+The test AWS account will have some base resources predefined, such as VPCs and subnets, via the `aws-ctd-test-base` Terraform root module. This module will also define an output a `context` var that test modules can use to reference these shared resources.
 
 ## 3. Standardizing on Infrastructure Component Modules
 [reference-standardization]: #3-standardizing-on-infrastructure-component-modules
