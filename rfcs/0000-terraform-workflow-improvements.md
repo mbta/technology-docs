@@ -581,9 +581,9 @@ This list may not be comprehensive; feel free to suggest additional alternatives
 ## Alternatives to Splitting Root Modules
 [alternatives-module-splitting]: #alternatives-to-splitting-root-modules
 
-We feel the [proposed approach][guide-module-splitting] adds a lot of flexibility without adding more complexity than the team can withstand. Focusing on splitting the `dev` module first will help us iron out the process and ensure that the resulting workflows are sensible before applying them to production in a future migration.
+We feel the [proposed approach][guide-module-splitting] adds a lot of flexibility without adding more complexity than the team can withstand. Splitting by team will allow us to manage Terraform (and Scalr) permissions at the team level, which will be significantly easier than splitting in other ways. Focusing on splitting the `dev` module first will help us iron out the process and ensure that the resulting workflows are sensible before applying them to production in a future migration.
 
-One alternative approach would be to split modules by individual application instead of by team, but that would add complexity without adding much more in the way of flexibility.
+One alternative approach would be to split modules by individual application instead of by team, but that would add complexity without adding much more in the way of flexibility, and is likely more granularity than we need at this point.
 
 ## Alternatives to Module Testing Workflow
 [alternatives-module-testing]: #alternatives-to-module-testing-workflow
