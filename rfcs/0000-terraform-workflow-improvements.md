@@ -295,7 +295,7 @@ Possible future root modules:
 
 As noted in the [guide-level explanation][guide-module-testing], we will set up testing for each application and infrastructure component child module by creating a `test/` module within each module's directory. The test module will define any dependent resources required by the module, and then call the module itself. It could even call other application modules if needed.
 
-Initially, the scope of testing accounted for in this workflow will be limited to confirming whether a Terraform module applies correctly in AWS. Actual application testing, including testing application's interaction with infrastructure, is still expected to happen within the dev/staging context. That said, there's nothing to prevent the possibility of extending this workflow in the future to facilitate end-to-end testing of applications in an isolated sandbox.
+Initially, the scope of testing accounted for in this workflow will be limited to confirming whether a Terraform module applies successfully in AWS. Actual application testing, including testing application's interaction with infrastructure, is still expected to happen within the dev/staging context. That said, there's nothing to prevent the possibility of extending this workflow in the future to facilitate end-to-end testing of applications in an isolated sandbox.
 
 ### Testing Workflow
 
