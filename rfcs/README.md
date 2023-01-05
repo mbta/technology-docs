@@ -1,4 +1,4 @@
-# RFCSs
+# RFCs
 
 The RFC process here is inspired by [that of the Rust programming
 language](https://github.com/rust-lang/rfcs).
