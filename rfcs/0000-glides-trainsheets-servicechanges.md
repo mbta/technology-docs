@@ -67,7 +67,7 @@ When Glides knows the consist assigned to a trip that already exists in static G
 <tr>
 <td>
 
-it uses a GTFS-realtime VehicleUpdate event to convey that information in the feed:
+it uses a GTFS-realtime TripUpdate event to convey that information in the feed:
 ```json
 {
   "id": "01dd55e08e36",
@@ -129,7 +129,7 @@ If a trip listed in static GTFS will not be occurring at all,
 <tr>
 <td>
 
-Glides uses a GTFS-realtime VehicleUpdate event to mark the trip as canceled:
+Glides uses a GTFS-realtime TripUpdate event to mark the trip as canceled:
 ```json
 {
   "id": "ac378f6daace",
@@ -175,7 +175,7 @@ If a trip that will be occurring cannot be matched to a trip listed in static GT
 <tr>
 <td>
 
-Glides uses a GTFS-realtime VehicleUpdate event to mark the trip as a duplicate of an existing trip running the same path:
+Glides uses a GTFS-realtime TripUpdate event to mark the trip as a duplicate of an existing trip running the same path:
 ```json
 {
   "id": "b9a1e9112231",
@@ -229,7 +229,7 @@ If a trip will be skipping some stops it was scheduled to make, either because i
 <tr>
 <td>
 
-Glides uses a GTFS-realtime VehicleUpdate event to mark the applicable stops as skipped:
+Glides uses a GTFS-realtime TripUpdate event to mark the applicable stops as skipped:
 ```json
 {
   "id": "f9b7373a3fc4",
@@ -284,7 +284,7 @@ If a trip will be making more stops than it was scheduled to make,
 <tr>
 <td>
 
-Glides uses a [GTFS-ServiceChanges v3.1](https://bit.ly/gtfs-service-changes-v3_1) NewTrips event to provide the new sequence of stops and a GTFS-ServiceChanges v3.1 VehicleUpdate event to mark the original trip as replaced by the new trip:
+Glides uses a [GTFS-ServiceChanges v3.1](https://bit.ly/gtfs-service-changes-v3_1) NewTrips event to provide the new sequence of stops and a GTFS-ServiceChanges v3.1 TripUpdate event to mark the original trip as replaced by the new trip:
 ```json
 {
   "id": "84e68f49dfa5",
