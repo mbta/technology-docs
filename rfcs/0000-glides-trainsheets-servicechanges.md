@@ -67,7 +67,7 @@ When Glides knows the consist assigned to a trip that already exists in static G
 <tr>
 <td>
 
-it uses a GTFS-realtime TripUpdate event to convey that information in the feed:
+it uses a GTFS-realtime TripUpdate event (with a nonstandard `consist` field) to convey that information in the feed:
 ```json
 {
   "id": "01dd55e08e36",
@@ -175,7 +175,7 @@ If a trip that will be occurring cannot be matched to a trip listed in static GT
 <tr>
 <td>
 
-Glides uses a GTFS-realtime TripUpdate event to mark the trip as a duplicate of an existing trip running the same path:
+Glides uses a GTFS-realtime TripUpdate event (with a nonstandard `revenue` field) to mark the trip as a duplicate of an existing trip running the same path:
 ```json
 {
   "id": "b9a1e9112231",
@@ -188,7 +188,8 @@ Glides uses a GTFS-realtime TripUpdate event to mark the trip as a duplicate of 
     "trip_properties": {
       "trip_id": "757460c22ece", // new
       "start_date": "20220404",
-      "start_time": "15:57:09"
+      "start_time": "15:57:09",
+      "revenue": true
     }
   }
 }
@@ -209,7 +210,8 @@ Glides sends an added trip event to consumers:
     "template-trip-id": "50974586",
     "new-trip-id": "757460c22ece",
     "service-date": "2022-04-12",
-    "start-time": "15:57:09"
+    "start-time": "15:57:09",
+    "revenue": true
   }
 }
 ```
@@ -582,11 +584,15 @@ Amazon Kinesis was selected in [RFC 5](https://github.com/mbta/technology-docs/b
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+<!--
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 - What parts of the design do you expect to resolve through the implementation of this feature
   before stabilization?
 - What related issues do you consider out of scope for this RFC that could be addressed in the
   future independently of the solution that comes out of this RFC?
+-->
+
+- editing the revenue/non-revenue state of an existing trip
 
 ## GTFS-realtime + GTFS-ServiceChanges vs Realtime Edits
 
@@ -601,6 +607,7 @@ Non-advantages:
 Disadvantages:
 - Less responsive to newly discovered requirements that aren't met by the current standard/proposal (we can add our own fields if we have to, but that defeats the purpose of sticking with the standard/proposal)
 - Not designed around partial records: we only use certain fields, but the sets of fields we use in various circumstances become complicated to manage
+- No mechanism for specifying revenue status of trips, since GTFS is designed for public-facing revenue data only
 
 ### Realtime Edits
 
