@@ -429,6 +429,55 @@ Glides sends a restructured trip event to consumers:
 </tr>
 </table>
 
+## Adjusted Trips - Revenue Status Change
+
+If a trip's revenue/non-revenue status needs to be changed,
+<table>
+<tr>
+<th>GTFS-realtime</th>
+<th>Realtime Edits</th>
+</tr>
+<tr>
+<td>
+
+Glides uses a GTFS-realtime TripUpdate event (with a nonstandard `revenue` field) to mark the trip with its new revenue state:
+```json
+{
+  "id": "b9a1e9112231",
+  "timestamp": 1649103580,
+  "trip_update": {
+    "trip": {
+      "trip_id": "50974586"
+    },
+    "trip_properties": {
+      "revenue": false
+    }
+  }
+}
+```
+
+</td>
+<td>
+
+Glides sends an adjusted trip event to consumers:
+```json
+{
+  "specversion": "1.0",
+  "type": "com.mbta.ctd.realtime-edits.adjusted-trip.v1",
+  "source": "glides.mbta.com",
+  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
+  "time": "2022-04-12T13:16:10-05:00",
+  "data": {
+    "trip-id": "50974586",
+    "revenue": false
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
 ## Departure Time
 
 If the time at which a trip will leave its starting terminal is entered into Glides,
@@ -591,8 +640,6 @@ Amazon Kinesis was selected in [RFC 5](https://github.com/mbta/technology-docs/b
 - What related issues do you consider out of scope for this RFC that could be addressed in the
   future independently of the solution that comes out of this RFC?
 -->
-
-- editing the revenue/non-revenue state of an existing trip
 
 ## GTFS-realtime + GTFS-ServiceChanges vs Realtime Edits
 
