@@ -641,6 +641,8 @@ Amazon Kinesis was selected in [RFC 5](https://github.com/mbta/technology-docs/b
   future independently of the solution that comes out of this RFC?
 -->
 
+- should undrop trip be a separate event in realtime edits or should we change drop trip to cover both use cases?
+
 ## GTFS-realtime + GTFS-ServiceChanges vs Realtime Edits
 
 ### GTFS-realtime + GTFS-ServiceChanges
