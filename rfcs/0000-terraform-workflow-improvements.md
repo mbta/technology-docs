@@ -324,7 +324,7 @@ As noted in the [guide-level explanation][guide-module-testing], testing will ha
 
 The test AWS account will have some base resources predefined, such as VPCs and subnets, via the `aws-ctd-test-base` Terraform root module. This module will also define an output a `context` var that test modules can use to reference these shared resources.
 
-In some cases it may also be necessary for test infrastructure to make use of real development/staging infrastructure in the `mbta-ctd-main` AWS account; this can be handled via cross-account IAM roles if necessary. However, the test AWS account should not be considered a safe place for sensitive data, and we'll need to make sure that no PI/PII can leak out of the main AWS account into the test account. For this reason, production resources will likely not be allowed to be shared with resources in the test AWS account, and any data shared between the accounts will need to be scrubbed of PI/PII in transit.
+In some cases there may be a desire for test infrastructure to make use of real development/staging infrastructure in the `mbta-ctd-main` AWS account. In theory this could be handled via cross-account IAM roles. However, the test AWS account should not be considered a safe place for sensitive data, and great care would need to be taken to make sure that no PI/PII can leak out of the main AWS account into the test account. Given this caveat, production resources will generally not be allowed to be shared with resources in the test AWS account, and any data shared between the accounts will need to be copied over and scrubbed of PI/PII in transit.
 
 ## 3. Standardizing on Infrastructure Component Modules
 [reference-standardization]: #3-standardizing-on-infrastructure-component-modules
