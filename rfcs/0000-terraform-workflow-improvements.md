@@ -433,7 +433,7 @@ If module versioning is not employed, changes to the module will need to be appl
 #### Scalr Workflow for Applying Changes In Development/Staging Context
 [scalr-workflow-development-staging]: #scalr-workflow-for-applying-changes-in-developmentstaging-context
 
-Each root module will have a GitHub-integrated Scalr workspace. Scalr will automatically run `terraform plan` when a pull request is opened, and attempt to automatically run `terraform apply` on merge. It will also be possible to run `terraform plan` locally using Scalr's remote operation backend, but not `terraform apply`; this is to ensure that GitHub acts as the source of truth for controlling Terraform state.
+Each root module will have a GitHub-integrated Scalr workspace. Scalr will automatically run `terraform plan` when a pull request is opened, and attempt to automatically run `terraform apply` on merge. It will also be possible to run `terraform plan` locally using Scalr's remote operation backend, but not `terraform apply`. This limitation is part of Scalr's design for VCS-integrated workspaces; it helps ensure that GitHub acts as the source of truth for controlling Terraform state, and enforce approval checks via PR reviews before changes are applied.
 
 ##### Continuous Integration &amp; Testing
 
