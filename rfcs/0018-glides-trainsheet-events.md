@@ -9,6 +9,8 @@ Glides will provide high-level trainsheet information as CloudEvents in a Kinesi
 # Motivation
 As part of digitizing the currently paper-based trainsheets that define operational conditions on the Green Line, Glides will be gathering information about consist assignments, dropped/added trips, and departure time adjustments from its users: pull-out inspectors at selected terminal stations. This data can serve to improve the rider-facing predictions produced by RTR, especially for departure times at a terminals, which currently do not have departure predictions at all.
 
+The goal of this RFC is to provide an interface which represents all data currently (2023H1) entered into Glides. While some additional flexibility is included, features outside the current scope of Glides are also outside the scope of these events and this RFC.
+
 # Guide-level explanation
 The Glides trainsheet functionality hews closely to what the paper-based trainsheets provide.
 
@@ -110,14 +112,6 @@ In order to reduce message duplication, a Trip Key is used to identify both adde
 - `endLocation` (Location): where the trip is ending
 ```json
 `{"serviceDate": "2023-01-20", "arrivalTime": "09:10:11", "endLocation": "id:yard-inner"}
-```
-**Scheduled Trip (known GTFS trip ID)**
-This should only be used in the case where Glides is frequently fetching an updated GTFS file (at least hourly).
-
-- `serviceDate` (RFC3999 date): the service date for the trip
-- `gtfsId` (string): GTFS trip ID
-```json
-`{"serviceDate": "2023-01-20", "gtfsId": "123456790"}
 ```
 
 ### Trip Type
