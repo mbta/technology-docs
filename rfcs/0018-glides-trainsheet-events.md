@@ -119,10 +119,22 @@ In order to reduce message duplication, a Trip Key is used to identify both adde
 ```
 **Scheduled Trip**
 - `serviceDate` (RFC3999 date): the service date for the trip
-- `scheduledTripId` (string): ID referencing the scheduled trip
+- `startLocation` (Location): where the trip is scheduled to start
+- `endLocation` (Location): where the trip is scheduled to end
+- `departureTime` (Time): when the trip is scheduled to depart `startLocation`
+- `arrivalTime` (Time): when the trip is scheduled to arrive at `endLocation`
+
 ```json
-{"serviceDate": "2023-01-20", "scheduledTripId": "102450"}
+{
+  "serviceDate": "2023-01-20",
+  "startLocation": {"gtfsId": "place-mdftf"},
+  "endLocation": {"gtfsId": "place-heath"},
+  "departureTime": "4:47:00",
+  "arrivalTime": "5:34:00"
+}
 ```
+*Notes*:
+- The added/scheduled distinction here is internal to Glides, and may not align with what is in other data sources. For example, an Added Trip in Glides may still correspond to a scheduled GTFS trip, and a Scheduled Trip may not appear in GTFS (due to track closures, for example)
 
 ## Events
 ### Batched
@@ -161,13 +173,15 @@ Event type: `com.mbta.ctd.glides.imported-scheduled-trips`
 Fields in the event:
 - `scheduleId` (string)
 - `trips`: Array of:
-	- `scheduledTripId` (string): unique identifier for the trip. Must be unique for the given `scheduleId`.
 	- `route` (string)
 	- `startLocation` (Location)
 	- `departureTime` (Time)
 	- `endLocation` (Location)
 	- `arrivalTime` (Time)
 	- `runs` (Array of `runId`): the runs operating this trip, with the lead car in the consist first.
+
+*Notes*
+- the combination of `startLocation`, `endLocation`, `departureTime`, and `arrivalTime` must be unique for the `scheduleId`.
 
 ### Operator signed in
 At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They do this by either physically signing a paper trainsheet, or by typing their badge number into Glides. This event represent either type of signin, but may not be generated in the case where an operator only signs into the paper trainsheet.
@@ -265,7 +279,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
 ## Examples
 ### Managing headways
 - Inspector Alice (badge number: 123) is working at Boston College
-- There are four scheduled trips: 9:55am (`scheduledTripId` 1, 10:00am (2), 10:05am (3), and 10:10am (4)
+- There are four scheduled trips going to Government Center: 9:55am, 10:00am, 10:05am, and 10:10am
 - Due to staffing issues, the 10:05am trip is dropped
 - Using the "Manage" headways, Alice changes the expected departure times of the remaining trips to 9:56am, 10:02am, and 10:08am.
 ```json
@@ -283,7 +297,10 @@ Updating the RFC is not necessary for either type of event change, but the schem
     },
     "tripKey": {
       "serviceDate": "2022-01-20",
-      "scheduledTripId": "3"
+      "startLocation": {"gtfsId": "place-lake"},
+      "endLocation": {"gtfsId": "place-gover"},
+      "departureTime": "10:05:00",
+      "arrivalTime": "10:52:00"
     },
     "reason": "staffing"
   }
@@ -304,7 +321,10 @@ Updating the RFC is not necessary for either type of event change, but the schem
         "data": {
           "tripKey": {
             "serviceDate": "2022-01-20",
-            "scheduledTripId": "1"
+            "startLocation": {"gtfsId": "place-lake"},
+            "endLocation": {"gtfsId": "place-gover"},
+            "departureTime": "09:55:00",
+            "arrivalTime": "10:42:00"
           },
           "departureTime": "9:56:00"
         }
@@ -314,7 +334,10 @@ Updating the RFC is not necessary for either type of event change, but the schem
         "data": {
           "tripKey": {
             "serviceDate": "2022-01-20",
-            "scheduledTripId": "2"
+            "startLocation": {"gtfsId": "place-lake"},
+            "endLocation": {"gtfsId": "place-gover"},
+            "departureTime": "10:00:00",
+            "arrivalTime": "10:47:00"
           },
           "departureTime": "10:02:00"
         }
@@ -324,7 +347,10 @@ Updating the RFC is not necessary for either type of event change, but the schem
         "data": {
           "tripKey": {
             "serviceDate": "2022-01-20",
-            "scheduledTripId": "4"
+            "startLocation": {"gtfsId": "place-lake"},
+            "endLocation": {"gtfsId": "place-gover"},
+            "departureTime": "10:10:00",
+            "arrivalTime": "10:57:00"
           },
           "departureTime": "10:08:00"
         }
@@ -336,7 +362,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
 
 ### Splitting a 2-car train into two 1-car trips
 - Inspector Alice (badge number: 123) is working at Boston College
-- There are two scheduled trips: 9:55am (`scheduledTripId` 100) and 10:00am (200)
+- There are two scheduled trips: 9:55am and 10:00am
 - Operator A (badge number: 456) and Operator B (badge number: 567) are scheduled to perform the 9:55am
 - Only 1 trainset (3800 and 3850) is available
 - In order to maintain headways, Inspector Alice will split the trainset
@@ -378,7 +404,10 @@ Updating the RFC is not necessary for either type of event change, but the schem
   "data": {
     "tripKey": {
       "serviceDate": "2022-01-20",
-      "scheduledTripId": "200"
+      "startLocation": {"gtfsId": "place-lake"},
+      "endLocation": {"gtfsId": "place-gover"},
+      "departureTime": "10:00:00",
+      "arrivalTime": "10:47:00"
     },
     "reason": "ran as single"
   }
@@ -388,7 +417,11 @@ Updating the RFC is not necessary for either type of event change, but the schem
   "data": {
     "tripKey": {
       "serviceDate": "2022-01-20",
-      "scheduledTripId": "100"
+   	  "startLocation": {"gtfsId": "place-lake"},
+      "endLocation": {"gtfsId": "place-gover"},
+      "departureTime": "09:55:00",
+      "arrivalTime": "10:42:00"
+
     },
     "operators": [
       {"badgeNumber": "456"}
@@ -464,7 +497,7 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
 
 ### Train departing 15 minutes later than scheduled
 - Inspector Alice (badge number: 123) is working at Mattapan
-- The 1:30am trip (`scheduledTripId` 1000) is being held 15 minutes to wait for a final Red Line train
+- The 1:30am trip is being held 15 minutes to wait for a final Red Line train
 ```json
 {
   "specversion": "1.0",
@@ -480,7 +513,10 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
     },
     "tripKey": {
       "serviceDate": "2023-01-22",
-      "scheduledTripId": "1000"
+      "startLocation": {"gtfsId": "place-matt"},
+      "endLocation": {"gtfsId": "place-ashmt"},
+      "departureTime": "25:30:00",
+      "arrivalTime": "25:38:00"
     },
     "departureTime": "25:45:00"
   }
