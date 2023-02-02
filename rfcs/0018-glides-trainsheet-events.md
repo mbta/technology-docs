@@ -80,7 +80,7 @@ It is represented as an object to provide future extensibility if needed.
 
 ### Location
 One of:
-- `{"gtfsId": "<GTFS stop ID>"}`, where the GTFS `location_type` is 0 (stop) or 1 (station)
+- `{"gtfsId": "<GTFS stop ID>"}`, where the GTFS `location_type` is 1 (station)
 - `{"glidesId": "<other>"}`: Other unique identifier for non-revenue locations, internal to Glides
 
 ### Operator
@@ -143,8 +143,8 @@ If multiple events are generated as a part of the same author action, then they 
 
 Event type: `com.mbta.ctd.glides.batched.v1`
 Fields in the event:
-- `author` (Author, optional): the inspector who performed the events, if it is the same for all the events in the `events` array. 
-- `events` (array of `{"type": string, "data": JSON}`): each element in the array is a CloudEvent including only the `type` and `data` field, and the `data` fields of the individual events do not need to re-include the `author` field if it is the same as the top-level `author`. See [Examples](#examples) for an example.
+- `author` (Author, optional): the human who performed the events, if it is the same for all the events in the `events` array. 
+- `events` (array of `{"type": string, "data": JSON}`): each element in the array is a CloudEvent including only the `type` and `data` field, and the `data` fields of the individual events SHOULD NOT re-include the `author` field. See [Examples](#examples) for an example.
 
 ### Imported date schedules
 These values map a service date to a schedule identifier for the given line. This event may happen at any time, and subsequent events will update the `scheduleId` used on the `serviceDate` for the `line` (but not the `scheduleId` used on the `serviceDate` for other lines).
@@ -217,7 +217,7 @@ Fields in the event:
 - If `startLocation` is present, then at least one of `departureTime` or `previousTripKey` is required.
 - If `endLocation` is present, then at least one of `arrivalTime` or `nextTripKey` is required.
 - The event SHOULD only include values which were explicitly included by the `author`: inferred values SHOULD NOT be included.
-- `consit` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
+- `consist` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
 
 ### Trip dropped
 This removes a trip (either added or scheduled), indicating that it will not be running.
@@ -244,7 +244,7 @@ Fields in the event:
 - `author` (Author): the inspector adding the trip
 - `tripKey` (Trip Key): which trip is being updated
 - `comment` (string, optional): free text information about the trip
-- `route` (string, optional): if specified, the new route tag for the trip. This is different from a GTFS route ID.
+- `endLocation` (Location, optional): the new destination of the train
 - `location` (Location, optional): where the time/consist is being updated for. This can be different from the location in the `author` value or in the `tripKey`, if the author is updating information about the train relative to a different location. Required if either `arrivalTime` or `departureTime` are specified.
 - `arrivalTime` (Time, optional): if present, the new time that the train is expected to arrive at the given location.
 - `departureTime` (Time, optional): if present, the new time that the train is expected to depart the given location.
@@ -252,7 +252,8 @@ Fields in the event:
 - `operators` (array of Delta Operator, optional): the list of operators assigned to perform this trip. If an operator is `"cleared"`, then no operator is assigned to the car in that position in the consist. If the operator is `"unmodified"` then the operator is the value from the schedule or the most-recent [Trip updated](#Trip-updated) event. The operator of the front car is listed first.
 
 *Notes*
-- `consit` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
+- setting a new `endLocation` does not modify the [Trip Key](#trip-key) for a scheduled trip, nor does setting a `departureTime` or `arrivalTime` at one of the endpoints.
+- `consist` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
 
 # Reference-level explanation
 ## Effects on RTR
@@ -545,6 +546,9 @@ Advantage:
 Disadvantages:
 - it also allows for confusing [Trip updated](#Trip-updated) events. How should clients interpret a [Trip updated](#Trip-updated) event which included `dropped` True, along with other changes to the trip?
 - Does not provide a location for the `reason` a trip was dropped
+
+## Alternative: allow `location_type` 0 locations
+While more flexible, it requires consumers of the events to support two types of GTFS stops. Glides has no plans to use the additional flexibility.
 
 ## Alternative: split update types into different events
 Examples:
