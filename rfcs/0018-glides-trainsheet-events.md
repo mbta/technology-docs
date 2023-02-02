@@ -174,7 +174,6 @@ Event type: `com.mbta.ctd.glides.imported_scheduled_trips.v1`
 Fields in the event:
 - `scheduleId` (string)
 - `trips`: Array of:
-  - `route` (string)
   - `startLocation` (Location)
   - `departureTime` (Time)
   - `endLocation` (Location)
@@ -201,7 +200,6 @@ Event type: `com.mbta.ctd.glides.trip_added.v1`
 Fields in the event:
 - `author` (Author): the inspector adding the trip
 - `tripKey` (Trip Key): provides a unique identifier for the newly created trip
-- `route` (string, optional): if specified, the route tag for the trip. This is different from a GTFS route ID.
 - `startLocation` (Location, conditionally required): where the trip will be starting. Required if `departureTime` is specified.
 - `endLocation` (Location, conditionally required): where the trip will be ending. Required if `arrivalTime` is specified.
 - `departureTime` (Time, conditionally required): when the added trip is expected to depart `startLocation`.
