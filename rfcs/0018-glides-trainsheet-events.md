@@ -44,7 +44,7 @@ The partition key will be a hash of the station at which the inspector is workin
 
 As the stream will include potential PII (operator badge information) it MUST be configured as encrypted-at-rest. 
 
-Multiple events can be included in a single Kinesis record, by wrapping them in a JSON array. This is an optimization for improving write speeds: further steps in the Kinesis pipeline may break up or rearrange these arrays. If multiple events are part of the same user action, the [Batched](#Batched) event should be used to combine them.
+Multiple events can be included in a single Kinesis record, by wrapping them in a JSON array. This is an optimization for improving write speeds: further steps in the Kinesis pipeline may break up or rearrange these arrays. If multiple events are part of the same user action, the [Batched](#Batched) event SHOULD be used to combine them.
 
 ## Value types
 
@@ -164,7 +164,7 @@ Event type: `com.mbta.ctd.glides.imported_run_assignments.v1`
 Fields in the event:
 - `runs`: Array of:
   - `serviceDate` (RFC3999 date)
-  - `runId` (string): unique identifier for the run. Must be unique for the given `serviceDate`.
+  - `runId` (string): identifier for the run. MUST be unique for the given `serviceDate`.
   - `operator` (Operator)
 
 ### Imported scheduled trips
@@ -182,7 +182,7 @@ Fields in the event:
   - `runs` (Array of `runId`): the runs operating this trip, with the lead car in the consist first.
 
 *Notes*
-- the combination of `startLocation`, `endLocation`, `departureTime`, and `arrivalTime` must be unique for the `scheduleId`.
+- the combination of `startLocation`, `endLocation`, `departureTime`, and `arrivalTime` MUST be unique for the `scheduleId`.
 
 ### Operator signed in
 At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They currently do this by physically signing a paper trainsheet: in the future, they will do this digitally.
@@ -216,7 +216,7 @@ Fields in the event:
 - At least one of `startLocation` and `endLocation` is required.
 - If `startLocation` is present, then at least one of `departureTime` or `previousTripKey` is required.
 - If `endLocation` is present, then at least one of `arrivalTime` or `nextTripKey` is required.
-- The event should only include values which were explicitly included by the `author`: inferred values should not be included.
+- The event SHOULD only include values which were explicitly included by the `author`: inferred values SHOULD NOT be included.
 - `consit` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
 
 ### Trip dropped
@@ -256,24 +256,24 @@ Fields in the event:
 
 # Reference-level explanation
 ## Effects on RTR
-These inputs should be similar to what RTR is already receiving from OCS.
+These inputs are similar to what RTR is already receiving from OCS.
 - Trip added: `TSCH NEW`
 - Trip dropped: `TSCH DEL` with delete status 1
 - Trip restored: `TSCH DEL` with delete status 0
 - Trip updated: `TSCH CON` (set consist), `TSCH OFF` (change departure time)
 
-One key difference is that the trainsheets do not record the destination or route for trips, so added trips currently only include one end of the trip. RTR should assume a default pattern for these trips.
+One key difference is that the trainsheets do not record the destination or route for trips, so added trips currently only include one end of the trip. RTR SHOULD assume a default pattern for these trips.
 
 ## Long-term storage / querying
-For future use, events will be archived to S3, using Kinesis Firehose. They can either be sent to LAMP's folder, or a new folder. As the stream contains potential PII (operator badge information) any long-term storage (S3, database) must be encrypted at rest.
+For future use, events will be archived to S3, using Kinesis Firehose. They can either be sent to LAMP's folder, or a new folder. As the stream contains potential PII (operator badge information) any long-term storage (S3, database) MUST be encrypted at rest.
 
 ### Schema
-All events should have their schema documented in the [mbta/schemas](https://github.com/mbta/schemas) GitHub repository.
+All events MUST have their schema documented in the [mbta/schemas](https://github.com/mbta/schemas) GitHub repository.
 
 ### Compatibility
 Changes to the events can happen in one of two ways:
 - backwards-compatible changes (such as adding a new field with a default value) where old consumers can still interpret new events can be made while keeping the same event type. 
-- incompatible-changes require creating a new event type, `<type>.v2` (creating a new version). Each version should be documented separately in the [mbta/schemas](https://github.com/mbta/schemas) GitHub repository.
+- incompatible-changes require creating a new event type, `<type>.v2` (creating a new version). Each version MUST be documented separately in the [mbta/schemas](https://github.com/mbta/schemas) GitHub repository.
 
 Consumers MUST ignore event types that they do not understand.
 
@@ -572,7 +572,7 @@ While the ladder view in Glides understands GTFS-RT, the trainsheet information 
 [Trike](https://github.com/mbta/trike) uses a similar approach to provide events to RTR for influencing predictions and to OCS Saver for future processing by LAMP / OPMI. This approach is described in [RFC4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) and [RFC5](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md).
 
 # Unresolved questions
-- While some sample CloudEvent formats are included here, the final specific format should be settled on as a conversation between the Glides, Transit Data, and LAMP teams.
+- While CloudEvent formats are included here, the final specific format should be settled on as a conversation between the Glides, Transit Data, and LAMP teams.
 - How should scheduled operators be represented? The current set of `imported_*` events are meant to represent this, but have their own issues. Other possibilities include:
   - a `scheduledOperators` field in [Trip updated](#trip-updated)
   - a single event representing the schedule import (instead of the 3 events currently described)
