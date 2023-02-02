@@ -23,9 +23,9 @@ The Glides trainsheet functionality hews closely to what the paper-based trainsh
 
 These actions are always taken by a logged-in user (generally an inspector).
 
-There are additional automated processes which keep the schedule up-to-date:
+There are additional processes which keep the schedule up-to-date:
 - importing date/schedule mappings
-- importing runs
+- importing run assignments
 - importing scheduled trips
 
 The stream of events proposed by this RFC serves two purposes:
@@ -35,27 +35,28 @@ The stream of events proposed by this RFC serves two purposes:
 The goal of this RFC is to provide an interface which represents all data currently (2023H1) in Glides. While some additional flexibility is included, features outside the current scope of Glides are also outside the scope of these events and this RFC. 
 
 ## CloudEvents
-All events will be in the [CloudEvents v1.0.2](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) format (or later), using the JSON encoding. The event types will be under the `com.mbta.ctd.glides` event namespace, and will be in the past-tense (i.e. `trip_added` rather than `add-trip`).
+All events will be in the [CloudEvents v1.0.2](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) format (or later), using the JSON encoding. The event types will be under the `com.mbta.ctd.glides` event namespace, and will be in the past-tense (i.e. `trip_added` rather than `add_-_trip`).
 
 ## Kinesis
-Events will be written to a Kinesis stream. Each Glides environment (`dev`, `dev-green`, and `prod`) will have a separate stream for their events, named `ctd-glides-<environment>`. 
+Events will be written as records to a Kinesis stream. Each Glides environment (`dev`, `dev-green`, and `prod`) will have a separate stream, named `ctd-glides-<environment>`. 
 
-The partition key will be a hash of the station at which the inspector is working and the inspector's identity, which ensures that multiple events from a single inspector are ordered correctly if the messages are distributed across multiple shards. 
-As the stream will include potential PII (operator badge information) it should be configured as encrypted-at-rest. 
+The partition key will be a hash of the station at which the inspector is working and the inspector's identity, which ensures that multiple events from a single inspector are ordered correctly if the records are distributed across multiple shards.
+
+As the stream will include potential PII (operator badge information) it MUST be configured as encrypted-at-rest. 
 
 Multiple events can be included in a single Kinesis record, by wrapping them in a JSON array. This is an optimization for improving write speeds: further steps in the Kinesis pipeline may break up or rearrange these arrays. If multiple events are part of the same user action, the [Batched](#Batched) event should be used to combine them.
 
 ## Value types
 
 ### Author
-Each message will include an `author` key, indicating who performed the given intervention.
+Each event which is caused by a person will include an `author` key, indicating who performed the given intervention.
 
-- `username` (string): the username of the logged-in user
+- `emailAddress` (string): the e-mail of the logged-in user
 - `badgeNumber` (string, optional): the badge number of the logged-in user
 - `location` (Location, optional): the location the logged-in user is managing
 ```json
 {
-  "username": "example",
+  "emailAddress": "name@example.com",
   "badgeNumber": "123456",
   "location": {"gtfsId": "place-lake"}
 }
@@ -63,7 +64,7 @@ Each message will include an `author` key, indicating who performed the given in
 or
 
 {
-  "username": "pswartz",
+  "emailAddress": "pswartz@mbta.com",
   "location": {"gtfsId": "place-matt"}
 }
 ```
@@ -109,7 +110,7 @@ A [GTFS Time](https://github.com/google/transit/blob/master/gtfs/spec/en/referen
 ### Trip Key
 For scheduled trips, Glides does not have the same trip ID used by RTR. For added trips, while an ID is provided, it can be the case that an added trip from the Glides perspective is matched to a GTFS trip, in which case RTR will use the GTFS trip ID in publishing the information.
 
-In order to reduce message duplication, a Trip Key is used to identify both added and scheduled trips.
+In order to reduce event duplication, a Trip Key is used to identify both added and scheduled trips.
 
 **Added Trip**
 - `serviceDate` (RFC3999 date): the service date for the trip
@@ -205,8 +206,8 @@ Fields in the event:
 - `endLocation` (Location, conditionally required): where the trip will be ending. Required if `arrivalTime` is specified.
 - `departureTime` (Time, conditionally required): when the added trip is expected to depart `startLocation`.
 - `arrivalTime` (Time, conditionally required): when the added trip is expected to arrive at `endLocation`.
-- `previousTripKey` (Trip Key, optional): links the newly created trip to the trip immediately before it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this message. Required if `endLocation` is specified and `arrivalTime` is NOT specified.
-- `nextTripKey` (Trip Key, optional): links the newly created trip to the trip after it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this message. Required if `startLocation` is specified and `departureTime` is NOT specified.
+- `previousTripKey` (Trip Key, optional): links the newly created trip to the trip immediately before it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `endLocation` is specified and `arrivalTime` is NOT specified.
+- `nextTripKey` (Trip Key, optional): links the newly created trip to the trip after it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `startLocation` is specified and `departureTime` is NOT specified.
 - `consist` (array of (Car|`null`), optional, default: empty list): the cars assigned to perform this trip. If a car is `null`, then no car is currently assigned to that position in the consist. 
 - `operators` (array of (Operator|`null`), optional, default: empty list): the array of operators assigned to perform this trip. If an operator is null, then no operator is assigned to the car in that position in the consist.
 - `comment` (string, optional): free text with additional information about the trip
@@ -247,8 +248,8 @@ Fields in the event:
 - `location` (Location, optional): where the time/consist is being updated for. This can be different from the location in the `author` value or in the `tripKey`, if the author is updating information about the train relative to a different location. Required if either `arrivalTime` or `departureTime` are specified.
 - `arrivalTime` (Time, optional): if present, the new time that the train is expected to arrive at the given location.
 - `departureTime` (Time, optional): if present, the new time that the train is expected to depart the given location.
-- `consist` (array of Delta Car, optional): the cars assigned to perform this trip. If a car is `"cleared"`, then no car is currently assigned to that position in the consist. If a car is `"unmodified"` then the car is the value from the most-recent Trip updated message. The front car is listed first.
-- `operators` (array of Delta Operator, optional): the list of operators assigned to perform this trip. If an operator is `"cleared"`, then no operator is assigned to the car in that position in the consist. If the operator is `"unmodified"` then the operator is the value from the schedule or the most-recent Trip updated message. The operator of the front car is listed first.
+- `consist` (array of Delta Car, optional): the cars assigned to perform this trip. If a car is `"cleared"`, then no car is currently assigned to that position in the consist. If a car is `"unmodified"` then the car is the value from the most-recent [Trip updated](#Trip-updated) event. The front car is listed first.
+- `operators` (array of Delta Operator, optional): the list of operators assigned to perform this trip. If an operator is `"cleared"`, then no operator is assigned to the car in that position in the consist. If the operator is `"unmodified"` then the operator is the value from the schedule or the most-recent [Trip updated](#Trip-updated) event. The operator of the front car is listed first.
 
 *Notes*
 - `consit` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
@@ -293,7 +294,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
   "time": "2023-01-20T09:50:00-05:00",
   "data": {
     "author": {
-      "username": "ainspector",
+      "emailAddress": "ainspector",
       "badgeNumber": "123",
       "location": {"gtfsId": "place-lake"}
     },
@@ -313,7 +314,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
   "time": "2023-01-20T09:50:10-05:00",
   "data": {
     "author": {
-      "username": "ainspector",
+      "emailAddress": "ainspector",
       "badgeNumber": "123",
       "location": {"gtfsId": "place-lake"}
     },
@@ -380,7 +381,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
   "time": "2023-01-20T09:45:10-05:00",
   "data": {
     "author": {
-      "username": "ainspector",
+      "emailAddress": "ainspector",
       "badgeNumber": "123",
       "location": {"gtfsId": place-lake"}
     },
@@ -509,7 +510,7 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
   "time": "2023-01-23T01:25:00-05:00",
   "data": {
     "author": {
-      "username": "ainspector",
+      "emailAddress": "ainspector",
       "badgeNumber": "123",
       "location": {"gtfsId": "place-matt"}
     },
@@ -528,18 +529,22 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
 Note that the date of the the event is 2023-01-23, but the service date is 2023-01-22. The hour in the time itself is greater than 24 hours, to reflect that the time is the next calendar day.
 
 # Drawbacks
-- This requires Glides to include new functionality to write their messages into a Kinesis stream. However, they already use `ex_aws` so additional messages should not be hard to add.
+- This requires Glides to include new functionality to write their events into a Kinesis stream. However, they already use `ex_aws` so this additional functionality should not be hard to add.
  
 # Rationale and alternatives
 - RTR already consumes a Kinesis stream of CloudEvents from OCS, 
 - so it's a limited additional lift to consume a new Kinesis stream
-- Kinesis Firehose allows writing the stream of messages to S3 for LAMP to consume, without needing a separate integration
+- Kinesis Firehose allows writing the stream of records to S3 for LAMP to consume, without needing a separate integration
 
 ## Alternative: departure time as RFC3999 string
 This would be easy to parse with standard tools, but doesn't match existing OCS behavior which only provides a time.
 
 ## Alternative: `dropped` boolean in Trip updated
-While this does eliminate the need for the Trip dropped and Trip restored messages, it also allows for confusing Trip updated messages. How should clients interpret a Trip updated message which included `dropped` True, along with other changes to the trip?
+Advantage:
+- eliminates the need for the [Trip dropped](#Trip-dropped) and [Trip restored](#Trip-restored) events
+Disadvantages:
+- it also allows for confusing [Trip updated](#Trip-updated) events. How should clients interpret a [Trip updated](#Trip-updated) event which included `dropped` True, along with other changes to the trip?
+- Does not provide a location for the `reason` a trip was dropped
 
 ## Alternative: split update types into different events
 Examples:
@@ -564,7 +569,7 @@ However, this is also limiting:
 While the ladder view in Glides understands GTFS-RT, the trainsheet information comes directly from HASTUS on a quarterly basis. It does not have updated trip IDs, so RTR would need to process the data anyways: it could not be provided directly to riders.
 
 # Prior art
-[Trike](https://github.com/mbta/trike) uses a similar approach to provide messages to RTR for influencing predictions and to OCS Saver for future processing by LAMP / OPMI. This approach is described in [RFC4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) and [RFC5](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md).
+[Trike](https://github.com/mbta/trike) uses a similar approach to provide events to RTR for influencing predictions and to OCS Saver for future processing by LAMP / OPMI. This approach is described in [RFC4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) and [RFC5](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md).
 
 # Unresolved questions
 - While some sample CloudEvent formats are included here, the final specific format should be settled on as a conversation between the Glides, Transit Data, and LAMP teams.
