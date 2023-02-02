@@ -7,7 +7,7 @@
 Glides will provide high-level trainsheet information as CloudEvents in a Kinesis stream
 
 # Motivation
-As part of digitizing the currently paper-based trainsheets that define operational conditions on the Green Line, Glides will be gathering information about consist assignments, dropped/added trips, and departure time adjustments from its users: pull-out inspectors at selected terminal stations. 
+As part of digitizing the currently paper-based trainsheets that define operational conditions on the Green Line, Glides will be gathering information about consist assignments, dropped/added trips, and departure time adjustments from its users: pull-out inspectors at selected terminal stations. This information will be useful to other consumers: primarily RTR for use in predictions, and secondarily for other operations needs.
 
 # Guide-level explanation
 The Glides trainsheet functionality hews closely to what the paper-based trainsheets provide, along with some shortcuts for common actions.
@@ -35,7 +35,7 @@ The stream of events proposed by this RFC serves two purposes:
 The goal of this RFC is to provide an interface which represents all data currently (2023H1) in Glides. While some additional flexibility is included, features outside the current scope of Glides are also outside the scope of these events and this RFC. 
 
 ## CloudEvents
-All events will be in the [CloudEvents v1.0.2](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) format (or later), using the JSON encoding. The event types will be under the `com.mbta.ctd.glides` event namespace, and will be in the past-tense (i.e. `trip-added` rather than `add-trip`).
+All events will be in the [CloudEvents v1.0.2](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) format (or later), using the JSON encoding. The event types will be under the `com.mbta.ctd.glides` event namespace, and will be in the past-tense (i.e. `trip_added` rather than `add-trip`).
 
 ## Kinesis
 Events will be written to a Kinesis stream. Each Glides environment (`dev`, `dev-green`, and `prod`) will have a separate stream for their events, named `ctd-glides-<environment>`. 
@@ -43,7 +43,7 @@ Events will be written to a Kinesis stream. Each Glides environment (`dev`, `dev
 The partition key will be a hash of the station at which the inspector is working and the inspector's identity, which ensures that multiple events from a single inspector are ordered correctly if the messages are distributed across multiple shards. 
 As the stream will include potential PII (operator badge information) it should be configured as encrypted-at-rest. 
 
-Multiple events can be included in a single Kinesis record, by wrapping them in a JSON array. This is an optimization for improving write speeds: further steps in the Kinesis pipeline may break up or rearrange these arrays. If multiple events are part of the same user action, the [Batched][#Batched] event should be used to combine them.
+Multiple events can be included in a single Kinesis record, by wrapping them in a JSON array. This is an optimization for improving write speeds: further steps in the Kinesis pipeline may break up or rearrange these arrays. If multiple events are part of the same user action, the [Batched](#Batched) event should be used to combine them.
 
 ## Value types
 
@@ -72,7 +72,7 @@ or
 Cars (individual parts of a train consist) will be described by their 4 digit number.
 ```json
 {
-  "carNumber": "3800"
+  "label": "3800"
 }
 ```
 It is represented as an object to provide future extensibility if needed.
@@ -91,14 +91,14 @@ Operators will be described by their badge number:
 ```
 It is represented as an object to provide future extensibility if needed.
 
-### Optional T
-A value that can either be an instance of T, `"unmodified"`, or `null`. For example, Optional Car can be
+### Delta T
+A value that can either be an instance of T, `"unmodified"`, or `"cleared"`. For example, Delta Car can be
 ```json
-{ "carNumber": "3800"}
+{ "label": "3800"}
 # or
 "unmodified"
 # or 
-null
+"cleared"
 ```
 
 ### Time
@@ -140,62 +140,63 @@ In order to reduce message duplication, a Trip Key is used to identify both adde
 ### Batched
 If multiple events are generated as a part of the same author action, then they can be combined into a single Batched event. This ensures that all of the events are kept together throughout the data pipeline.
 
-Event type: `com.mbta.ctd.glides.batched`
+Event type: `com.mbta.ctd.glides.batched.v1`
 Fields in the event:
 - `author` (Author, optional): the inspector who performed the events, if it is the same for all the events in the `events` array. 
-- `events` (array of `{"type": string, "data": JSON}`): each element in the array is a CloudEvent including only the `type` and `data` field, and the `data` fields of the individual events do not need to re-include the `author` field if it is the same as the top-level `author`. See [Examples][#examples] for an example.
+- `events` (array of `{"type": string, "data": JSON}`): each element in the array is a CloudEvent including only the `type` and `data` field, and the `data` fields of the individual events do not need to re-include the `author` field if it is the same as the top-level `author`. See [Examples](#examples) for an example.
 
 ### Imported date schedules
 These values map a service date to a schedule identifier for the given line. This event may happen at any time, and subsequent events will update the `scheduleId` used on the `serviceDate` for the `line` (but not the `scheduleId` used on the `serviceDate` for other lines).
 
-Event type: `com.mbta.ctd.glides.imported-date-schedules`
+Event type: `com.mbta.ctd.glides.imported_date_schedules.v1`
 Fields in the event:
 - `line` (string): the line for which a new date/schedule mapping is being imported
 - `ratingName` (string): the rating to which the new dates belong
 - `schedules`: Array of:
-	- `serviceDate` (RFC3999 date): date on which the given schedule will be used
-	- `scheduleId` (string): unique identifier for the schedule of trips running on this date 
+  - `serviceDate` (RFC3999 date): date on which the given schedule will be used
+  - `scheduleId` (string): unique identifier for the schedule of trips running on this date 
 
-### Imported runs
+### Imported run assignments
 Runs map an operator to their work for a given `serviceDate`. Subsequent events update the `operator` assigned to the `runId` on the given `serviceDate`.
 
-Event type: `com.mbta.ctd.glides.imported-runs`
+Event type: `com.mbta.ctd.glides.imported_run_assignments.v1`
 Fields in the event:
 - `runs`: Array of:
-	- `serviceDate` (RFC3999 date)
-	- `runId` (string): unique identifier for the run. Must be unique for the given `serviceDate`.
-	- `operator` (Operator)
+  - `serviceDate` (RFC3999 date)
+  - `runId` (string): unique identifier for the run. Must be unique for the given `serviceDate`.
+  - `operator` (Operator)
 
 ### Imported scheduled trips
 This event maps a given `scheduleId` to the trips running for that day. Subsequent events replace all the trips for the given `scheduleId`.
 
-Event type: `com.mbta.ctd.glides.imported-scheduled-trips`
+Event type: `com.mbta.ctd.glides.imported_scheduled_trips.v1`
 Fields in the event:
 - `scheduleId` (string)
 - `trips`: Array of:
-	- `route` (string)
-	- `startLocation` (Location)
-	- `departureTime` (Time)
-	- `endLocation` (Location)
-	- `arrivalTime` (Time)
-	- `runs` (Array of `runId`): the runs operating this trip, with the lead car in the consist first.
+  - `route` (string)
+  - `startLocation` (Location)
+  - `departureTime` (Time)
+  - `endLocation` (Location)
+  - `arrivalTime` (Time)
+  - `runs` (Array of `runId`): the runs operating this trip, with the lead car in the consist first.
 
 *Notes*
 - the combination of `startLocation`, `endLocation`, `departureTime`, and `arrivalTime` must be unique for the `scheduleId`.
 
 ### Operator signed in
-At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They do this by either physically signing a paper trainsheet, or by typing their badge number into Glides. This event represent either type of signin, but may not be generated in the case where an operator only signs into the paper trainsheet.
+At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They do this by either physically signing a paper trainsheet, or by typing their badge number into Glides. This event represent either type of signin, but may not be generated in the case where an operator only signs into the paper trainsheet and the inspector does not enter that into Glides.
 
-Event type: `com.mbta.ctd.glides.operator-signed-in`
+Event type: `com.mbta.ctd.glides.operator_signed_in.v1`
 Fields in the event:
 - `author` (Author): the inspector who signed in the operator
 - `operator` (Operator): the operator who signed in
 - `signedInAt` (RFC3999 timestamp): the time at which they signed in (separate from the `time` of the event)
+- `confirmation` (string): how the operator confirmed that they signed in. Some possibilities are their badge number, an RFID tag number, or "paper" if they were signed in on a paper sheet.
 
 ### Trip added
 This creates a new trip in the timesheet. It may or may not be a new trip relative to GTFS (see the splitting a train reference example).
 
-Event type: `com.mbta.ctd.glides.trip-added`
+Event type: `com.mbta.ctd.glides.trip_added.v1`
 Fields in the event:
 - `author` (Author): the inspector adding the trip
 - `tripKey` (Trip Key): provides a unique identifier for the newly created trip
@@ -206,20 +207,21 @@ Fields in the event:
 - `arrivalTime` (Time, conditionally required): when the added trip is expected to arrive at `endLocation`.
 - `previousTripKey` (Trip Key, optional): links the newly created trip to the trip immediately before it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this message. Required if `endLocation` is specified and `arrivalTime` is NOT specified.
 - `nextTripKey` (Trip Key, optional): links the newly created trip to the trip after it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this message. Required if `startLocation` is specified and `departureTime` is NOT specified.
-- `consist` (array of Optional Car, optional, default: empty list): the cars assigned to perform this trip. If a car is `null`, then no car is currently assigned to that position in the consist.
-- `operators` (list of Optional Operator, optional, default: empty list): the array of operators assigned to perform this trip. If an operator is `null`, then no operator is assigned to the car in that position in the consist.
+- `consist` (array of (Car|`null`), optional, default: empty list): the cars assigned to perform this trip. If a car is `null`, then no car is currently assigned to that position in the consist. 
+- `operators` (array of (Operator|`null`), optional, default: empty list): the array of operators assigned to perform this trip. If an operator is null, then no operator is assigned to the car in that position in the consist.
 - `comment` (string, optional): free text with additional information about the trip
 
 *Notes*
 - At least one of `startLocation` and `endLocation` is required.
-- If `startLocation` is 
+- If `startLocation` is present, then at least one of `departureTime` or `previousTripKey` is required.
+- If `endLocation` is present, then at least one of `arrivalTime` or `nextTripKey` is required.
 - The event should only include values which were explicitly included by the `author`: inferred values should not be included.
-- `consist` and `operators` MUST be the same length; if they are not, the behavior of consumers is undefined.
+- `consit` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
 
 ### Trip dropped
 This removes a trip (either added or scheduled), indicating that it will not be running.
 
-Event type: `com.mbta.ctd.glides.trip-dropped`
+Event type: `com.mbta.ctd.glides.trip_dropped.v1`
 Fields in the event:
 - `author` (Author): the inspector dropping the trip.
 - `tripKey` (Trip Key): which trip to drop. can be either an added or scheduled trip.
@@ -228,7 +230,7 @@ Fields in the event:
 ### Trip restored
 This restores a trip (either added or scheduled) that was previously dropped.
 
-Event type: `com.mbta.ctd.glides.trip-restored`
+Event type: `com.mbta.ctd.glides.trip_restored.v1`
 Fields in the event:
 - `author` (Author): the inspector restoring the trip.
 - `tripKey` (Trip Key): which trip to restore. can be either an added or scheduled trip.
@@ -236,20 +238,20 @@ Fields in the event:
 ### Trip updated
 This indicates that a trip was updated in some fashion:  consist, operators, departure time. This includes updates which confirm an arrival or departure time. Fields which are not present are not considered to be updated.
 
-Event type: `com.mbta.ctd.glides.trip-updated`
+Event type: `com.mbta.ctd.glides.trip_updated.v1`
 Fields in the event:
 - `author` (Author): the inspector adding the trip
 - `tripKey` (Trip Key): which trip is being updated
 - `comment` (string, optional): free text information about the trip
 - `route` (string, optional): if specified, the new route tag for the trip. This is different from a GTFS route ID.
-- `location` (Location, optional): where the time/consist is being updated for. This can be different from the location in the `author` value or in the `tripKey`, if the author is updating information about the train relative to a different location.
-- `arrivalTime` (Time, optional): if present, the new time that the train is expected to arrive at the given location. If `location` is not specified, this is the time the vehicle is arriving at the final location of the trip.
-- `departureTime` (Time, optional): if present, the new time that the train is expected to depart the given location. If `location` is not specified, this is the time the vehicle is departing the first location of the trip.
-- `consist` (array of Optional Car, optional): the cars assigned to perform this trip. If a car is `null`, then no car is currently assigned to that position in the consist. The front car should be listed first.
-- `operators` (array of Optional Operator, optional): the list of operators assigned to perform this trip. If an operator is `null`, then no operator is assigned to the car in that position in the consist. If the operator is "unmodified" then the operator is the value from the schedule or the most-recent Trip updated message. 
+- `location` (Location, optional): where the time/consist is being updated for. This can be different from the location in the `author` value or in the `tripKey`, if the author is updating information about the train relative to a different location. Required if either `arrivalTime` or `departureTime` are specified.
+- `arrivalTime` (Time, optional): if present, the new time that the train is expected to arrive at the given location.
+- `departureTime` (Time, optional): if present, the new time that the train is expected to depart the given location.
+- `consist` (array of Delta Car, optional): the cars assigned to perform this trip. If a car is `"cleared"`, then no car is currently assigned to that position in the consist. If a car is `"unmodified"` then the car is the value from the most-recent Trip updated message. The front car is listed first.
+- `operators` (array of Delta Operator, optional): the list of operators assigned to perform this trip. If an operator is `"cleared"`, then no operator is assigned to the car in that position in the consist. If the operator is `"unmodified"` then the operator is the value from the schedule or the most-recent Trip updated message. The operator of the front car is listed first.
 
 *Notes*
-- `consist` and `operators` MUST be the same length; if they are not, the behavior of consumers is undefined.
+- `consit` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
 
 # Reference-level explanation
 ## Effects on RTR
@@ -270,7 +272,7 @@ All events should have their schema documented in the [mbta/schemas](https://git
 ### Compatibility
 Changes to the events can happen in one of two ways:
 - backwards-compatible changes (such as adding a new field with a default value) where old consumers can still interpret new events can be made while keeping the same event type. 
-- incompatible-changes require creating a new event type. Some options as described in [RFC 4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) are `<type>.<date>` (adding the date of the new event) or `<type>.v2` (creating a new version). Each version should be documented separately in the [mbta/schemas](https://github.com/mbta/schemas) GitHub repository.
+- incompatible-changes require creating a new event type, `<type>.v2` (creating a new version). Each version should be documented separately in the [mbta/schemas](https://github.com/mbta/schemas) GitHub repository.
 
 Consumers MUST ignore event types that they do not understand.
 
@@ -284,7 +286,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
 - Using the "Manage" headways, Alice changes the expected departure times of the remaining trips to 9:56am, 10:02am, and 10:08am.
 ```json
 {
-  "type": "com.mbta.ctd.glides.trip-dropped",
+  "type": "com.mbta.ctd.glides.trip_dropped.v1",
   "specversion": "1.0",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
@@ -307,7 +309,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
 }
 # specversion, source, id elided
 {
-  "type": "com.mbta.ctd.glides.batched",
+  "type": "com.mbta.ctd.glides.batched.v1",
   "time": "2023-01-20T09:50:10-05:00",
   "data": {
     "author": {
@@ -317,7 +319,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
     },
     "events": [
       {
-        "type": "com.mbta.ctd.glides.trip-updated",
+        "type": "com.mbta.ctd.glides.trip_updated.v1",
         "data": {
           "tripKey": {
             "serviceDate": "2022-01-20",
@@ -330,7 +332,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
         }
       },
       {
-        "type": "com.mbta.ctd.glides.trip-updated",
+        "type": "com.mbta.ctd.glides.trip_updated.v1",
         "data": {
           "tripKey": {
             "serviceDate": "2022-01-20",
@@ -343,7 +345,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
         }
       },
       {
-        "type": "com.mbta.ctd.glides.trip-updated",
+        "type": "com.mbta.ctd.glides.trip_updated.v1",
         "data": {
           "tripKey": {
             "serviceDate": "2022-01-20",
@@ -372,7 +374,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.glides.operator-signed-in",
+  "type": "com.mbta.ctd.glides.operator-signed-in.v1",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2023-01-20T09:45:10-05:00",
@@ -391,7 +393,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
 # further specversion, source, time, and ID fields elided from the top level
 # author elided from underneath "data"
 {
-  "type": "com.mbta.ctd.glides.operator-signed-in",
+  "type": "com.mbta.ctd.glides.operator-signed-in.v1",
   "data": {
     "operator": {
       "badgeNumber": "567"
@@ -400,7 +402,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
   }
 }
 {
-  "type": "com.mbta.ctd.glides.trip-dropped",
+  "type": "com.mbta.ctd.glides.trip_dropped.v1",
   "data": {
     "tripKey": {
       "serviceDate": "2022-01-20",
@@ -413,7 +415,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
   }
 }
 {
-  "type": "com.mbta.ctd.glides.trip-updated",
+  "type": "com.mbta.ctd.glides.trip_updated.v1",
   "data": {
     "tripKey": {
       "serviceDate": "2022-01-20",
@@ -427,18 +429,18 @@ Updating the RFC is not necessary for either type of event change, but the schem
       {"badgeNumber": "456"}
     ],
     "consist": [
-      {"carNumber": "3800"}
+      {"label": "3800"}
     ],
     "comment": "single"
   }
 }
 {
-  "type": "com.mbta.ctd.glides.batched",
+  "type": "com.mbta.ctd.glides.batched.v1",
   "time": "2023-01-20T09:50:15-05:00",
   "data": {
     "events": [
       {
-        "type": "com.mbta.ctd.glides.trip-added",
+        "type": "com.mbta.ctd.glides.trip_added.v1",
         "data": {
           "tripKey": {
             "serviceDate": "2022-01-20",
@@ -452,7 +454,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
           },
           "consist": [
             {
-              "carNumber": "3850"
+              "label": "3850"
             }
           ],
           "operators": [
@@ -464,7 +466,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
         }
       },
       {
-        "type": "com.mbta.ctd.glides.trip-added",
+        "type": "com.mbta.ctd.glides.trip_added.v1",
         "data": {
           "tripKey": {
             "serviceDate": "2022-01-20",
@@ -477,7 +479,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
           },
           "consist": [
             {
-              "carNumber": "3850"
+              "label": "3850"
             }
           ],
           "operators": [
@@ -501,7 +503,7 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
 ```json
 {
   "specversion": "1.0",
-  "type": "com.mbta.ctd.glides.trip-updated",
+  "type": "com.mbta.ctd.glides.trip_updated.v1",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2023-01-23T01:25:00-05:00",
@@ -561,11 +563,12 @@ However, this is also limiting:
 
 While the ladder view in Glides understands GTFS-RT, the trainsheet information comes directly from HASTUS on a quarterly basis. It does not have updated trip IDs, so RTR would need to process the data anyways: it could not be provided directly to riders.
 
+# Prior art
+[Trike](https://github.com/mbta/trike) uses a similar approach to provide messages to RTR for influencing predictions and to OCS Saver for future processing by LAMP / OPMI. This approach is described in [RFC4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) and [RFC5](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md).
+
 # Unresolved questions
-- While some sample CloudEvent formats are included here, the specific format should be settled on as a conversation between the Glides and Transit Data teams.
-- The UI does not currently give a `reason` for edits, only for dropped trips. Should there be a `reason` for edits (separate from `comment`)?
+- While some sample CloudEvent formats are included here, the final specific format should be settled on as a conversation between the Glides, Transit Data, and LAMP teams.
 - Some trainsheet entries (removing an operator from their trips) can happen the day before. Do we need to persist any events longer than the 24 hour Kinesis default?
-- If Glides starts being used at non-terminal, non-yard stations, trip departure times may not be unique. (Government Center)
 
 # Future possibilities
 - As Glides becomes more widely adopted, further information entered by Chief Inspectors and other officials can be included as events, such as short turns, express trips, and non-revenue trips. However, this is not currently scheduled for implementation.
