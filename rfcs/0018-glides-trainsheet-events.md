@@ -185,14 +185,14 @@ Fields in the event:
 - the combination of `startLocation`, `endLocation`, `departureTime`, and `arrivalTime` must be unique for the `scheduleId`.
 
 ### Operator signed in
-At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They do this by either physically signing a paper trainsheet, or by typing their badge number into Glides. This event represent either type of signin, but may not be generated in the case where an operator only signs into the paper trainsheet and the inspector does not enter that into Glides.
+At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They currently do this by physically signing a paper trainsheet: in the future, they will do this digitally.
 
 Event type: `com.mbta.ctd.glides.operator_signed_in.v1`
 Fields in the event:
 - `author` (Author): the inspector who signed in the operator
 - `operator` (Operator): the operator who signed in
 - `signedInAt` (RFC3999 timestamp): the time at which they signed in (separate from the `time` of the event)
-- `confirmation` (string): how the operator confirmed that they signed in. Some possibilities are their badge number, an RFID tag number, or "paper" if they were signed in on a paper sheet.
+- `confirmation` (object): how the operator confirmed that they signed in. Some possibilities are their badge number (`{"type": "<badge number>"`}) or an RFID tag number (`{"rfid": "<RFID tag">}`)
 
 ### Trip added
 This creates a new trip in the timesheet. It may or may not be a new trip relative to GTFS (see the splitting a train reference example).
@@ -573,7 +573,11 @@ While the ladder view in Glides understands GTFS-RT, the trainsheet information 
 
 # Unresolved questions
 - While some sample CloudEvent formats are included here, the final specific format should be settled on as a conversation between the Glides, Transit Data, and LAMP teams.
-- Some trainsheet entries (removing an operator from their trips) can happen the day before. Do we need to persist any events longer than the 24 hour Kinesis default?
+- How should scheduled operators be represented? The current set of `imported_*` events are meant to represent this, but have their own issues. Other possibilities include:
+  - a `scheduledOperators` field in [Trip updated](#trip-updated)
+  - a single event representing the schedule import (instead of the 3 events currently described)
+  - a single event on some cadence, with future trips and their scheduled operators
+- Some trainsheet entries (removing an operator from their trips, and the schedule) can happen more than 24 hours before the event's effect takes place. Do we need to persist any events longer than the 24 hour Kinesis default? Kinesis can store events up to a maximum of 7 days.
 
 # Future possibilities
 - As Glides becomes more widely adopted, further information entered by Chief Inspectors and other officials can be included as events, such as short turns, express trips, and non-revenue trips. However, this is not currently scheduled for implementation.
