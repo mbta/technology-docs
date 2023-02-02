@@ -295,7 +295,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
   "time": "2023-01-20T09:50:00-05:00",
   "data": {
     "author": {
-      "emailAddress": "ainspector",
+      "emailAddress": "ainspector@example.com",
       "badgeNumber": "123",
       "location": {"gtfsId": "place-lake"}
     },
@@ -315,7 +315,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
   "time": "2023-01-20T09:50:10-05:00",
   "data": {
     "author": {
-      "emailAddress": "ainspector",
+      "emailAddress": "ainspector@example.com",
       "badgeNumber": "123",
       "location": {"gtfsId": "place-lake"}
     },
@@ -382,7 +382,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
   "time": "2023-01-20T09:45:10-05:00",
   "data": {
     "author": {
-      "emailAddress": "ainspector",
+      "emailAddress": "ainspector@example.com",
       "badgeNumber": "123",
       "location": {"gtfsId": place-lake"}
     },
@@ -511,7 +511,7 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
   "time": "2023-01-23T01:25:00-05:00",
   "data": {
     "author": {
-      "emailAddress": "ainspector",
+      "emailAddress": "ainspector@example.com",
       "badgeNumber": "123",
       "location": {"gtfsId": "place-matt"}
     },
