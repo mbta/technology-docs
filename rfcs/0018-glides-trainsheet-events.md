@@ -328,6 +328,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
             "departureTime": "09:55:00",
             "arrivalTime": "10:42:00"
           },
+          "location": {"gtfsId": "place-lake"},
           "departureTime": "9:56:00"
         }
       },
@@ -341,6 +342,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
             "departureTime": "10:00:00",
             "arrivalTime": "10:47:00"
           },
+          "location": {"gtfsId": "place-lake"},
           "departureTime": "10:02:00"
         }
       },
@@ -354,6 +356,7 @@ Updating the RFC is not necessary for either type of event change, but the schem
             "departureTime": "10:10:00",
             "arrivalTime": "10:57:00"
           },
+          "location": {"gtfsId": "place-lake"},
           "departureTime": "10:08:00"
         }
       }
@@ -520,6 +523,7 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
       "departureTime": "25:30:00",
       "arrivalTime": "25:38:00"
     },
+    "location": {"gtfsId": "place-matt"},
     "departureTime": "25:45:00"
   }
 }
