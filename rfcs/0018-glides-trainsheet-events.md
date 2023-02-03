@@ -31,7 +31,7 @@ The stream of events proposed by this RFC serves two purposes:
 The goal of this RFC is to provide an interface which represents all data currently (2023H1) in Glides which is confirming or making changes to revenue service. While some additional flexibility is included, features outside the current scope of Glides are also outside the scope of these events and this RFC. Additionally, events which do not refer to light-rail service are also outside the scope of this RFC.
 
 ## CloudEvents
-All events will be in the [CloudEvents v1.0.2](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) format (or later), using the JSON encoding. The event types will be under the `com.mbta.ctd.glides` event namespace, use `camel_case`, and will be in the past-tense (i.e. `trip_added` rather than `add_trip`).
+All events will be in the [CloudEvents v1.0.2](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) format (or later), using the JSON encoding. The event types will be under the `com.mbta.ctd.glides` event namespace, use `snake_case`, and will be in the past-tense (i.e. `trip_added` rather than `add_trip`).
 
 ## Kinesis
 Events will be written as records to a Kinesis stream. Each Glides environment (`dev`, `dev-green`, and `prod`) will have a separate stream, named `ctd-glides-<environment>`. 
