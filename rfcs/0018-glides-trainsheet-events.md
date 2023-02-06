@@ -166,6 +166,8 @@ Fields in the object:
 *Notes*
 - setting a new location or time does not modify the [Trip Key](#trip-key) for a scheduled trip.
 - if a trip is dropped, fields that are then irrelevant (such as `startTime` or `cars`) SHOULD NOT be set.
+- If `cars` is updated from a 1-element list to a 2-element list, any unset fields in the 2nd car should be considered `"cleared"`. This is relevant if a two-car train has a car removed and then re-added. The 2nd car does not retain the data it used to have (and doesn't fall through to the scheduled operator) unless that data is specifically included in the new object.
+
 
 #### TripAdded
 There is a new trip, that does not appear in the Glides' schedule data. Any added trips will appear exactly once a TripAdded object, and any future updates will appear as TripUpdated objects.
@@ -201,7 +203,7 @@ An empty object `{}` is valid if nothing about the car has been modified.
 The length of `cars`, always reflects the known length of the train.
 
 #### Scheduled
-Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never modified by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
+Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never overriden by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
 
 Fields:
 - `cars` (array of [ScheduledCar](#ScheduledCar)): Array of length 1 or 2. The length reflects the scheduled length of the train. In a 2 car train, the front car is listed first.
