@@ -145,7 +145,7 @@ Event type: `com.mbta.ctd.glides.trips_updated.v1`
 Fields in the event:
 - `author` (Author): the inspector who inputed the new information.
 - `inputType` (string): the action the inspector performed in Glides that caused the update. There are many ways to update trips in Glides, and all updated information normalized into the same format in `tripUpdates`. This field indicates what the inspector was doing in Glides, for consumers who care not just about service, but also care about how inspectors are using Glides. Example values are `"add-trip"` or `"manage-headways"`, but no guarantees are given about what strings will be used.
-- `tripUpdates` (array of (TripUpdated|TripAdded)): The list of one or more trips that have new information.
+- `tripUpdates` (array of ([TripUpdated](#TripUpdated)|[TripAdded](#TripAdded))): The list of one or more trips that have new information.
 
 #### TripUpdated
 This indicates that a trip was updated in some fashion:  consist, operators, departure time. The trip is either a scheduled trip, or an added trip that has already appeared in the events stream. Fields which are not present are not considered to be updated.
@@ -187,7 +187,7 @@ New restrictions on existing fields:
 - If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
 - If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
 
-Glides SHOULD include a `cars` field to indicate the length of the train, even if no information is known about each car.
+Glides SHOULD include the `cars` field to indicate the length of the train, even if no information is known about each car.
 
 #### Car
 Fields:
