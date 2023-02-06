@@ -591,6 +591,16 @@ Disadvantages:
 
 Because this is just a hypothetical benefit, and adding a snapshot in later would be backwards-compatible, it won't be included unless there's a concrete reason for it.
 
+## Alternative: Split "cars" field into separate fields.
+Car numbers and operators are joined into a `cars` field with a list of objects. Previous versions of the RFC had them as separate fields, each with their own list.
+
+Similarly, there is a `scheduled.cars` list that joins scheduled runs and operators together.
+
+Disadvantages of separate lists:
+- Requires keeping the lists the same length.
+- Requires zipping the lists together to get all data about each car.
+- Requires a special "unmodified" value for elements of the list that haven't been modified. A joined `cars` list can use the standard way to show a datum has not been modified by omitting it from the object.
+
 # Prior art
 [Trike](https://github.com/mbta/trike) uses a similar approach to provide events to RTR for influencing predictions and to OCS Saver for future processing by LAMP / OPMI. These events come from the heavy-rail dispatching system, which uses another implementation of trainsheets. This approach is described in [RFC4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) and [RFC5](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md).
 
