@@ -577,6 +577,20 @@ Advantages to combining them:
 - Better represents how TripAdded can contain basically the same information that TripUpdated can.
 - The TripsUpdated event can contain a list of objects, instead of needing a separate Batched event to combine arbitrary events. (The Batched event is not otherwise needed, because the other operator-signed-in and editors-changed events never happen at the same time as trips-updated.)
 
+## Alternative: Include snapshot of all data, not just changes
+In order to know everything about a trip, a client must be listening and remember all past changes. Glides could publish everything it knows about a trip so far, alongside updates or as an independent event.
+
+Benefits:
+- If a change was made more than 24hr ago, and is not in Kinesis anymore, a snapshot lets clients see the data even if they missed the old event.
+- Reduces the chance that clients and Glides get out of sync if their logic for updating state based on changes is not the same.
+- Some clients may be able to ignore all changes and only look at the snapshot, simplifying their implementation.
+
+Disadvantages:
+- More data, more complicated schema, more effort.
+- Might not completely solve the out-of-date data problem for some edge cases.
+
+Because this is just a hypothetical benefit, and adding a snapshot in later would be backwards-compatible, it won't be included unless there's a concrete reason for it.
+
 # Prior art
 [Trike](https://github.com/mbta/trike) uses a similar approach to provide events to RTR for influencing predictions and to OCS Saver for future processing by LAMP / OPMI. These events come from the heavy-rail dispatching system, which uses another implementation of trainsheets. This approach is described in [RFC4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) and [RFC5](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md).
 
