@@ -134,7 +134,9 @@ Fields in the event:
 - `author` (Author): the inspector who signed in the operator
 - `operator` (string): the badge number of the operator who signed in
 - `signedInAt` (RFC3999 timestamp): the time at which they signed in (separate from the `time` of the event)
-- `confirmation` (object): how the operator confirmed that they signed in. Some possibilities are their badge number (`{"type": "<badge number>"`}) or an RFID tag number (`{"rfid": "<RFID tag">}`). The specific formats may change: consumers SHOULD NOT depend on any specific format.
+- `confirmation` (string): how the operator confirmed that they signed in. Current possibilities are `"type:<badge number>"` if they signed by typing in their badge number, or `"tap"` if they signed in by tapping their badge on an RFID reader, but future string formats may be added without warning, and consumers SHOULD NOT depend on any specific format.
+
+The badge's RFID serial number is not included in the stream for security reasons.
 
 ### Trips Updated
 Glides has new information about trips. Consumers who want to know what trains are running should pay attention to this event, and don't need to pay attention to any other events.
