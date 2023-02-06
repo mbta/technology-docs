@@ -187,6 +187,7 @@ New restrictions on existing fields:
 - At least one of `startLocation` and `endLocation` is required.
 - If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
 - If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
+- `dropped` SHOULD NOT be set.
 
 Glides SHOULD include the `cars` field to indicate the length of the train, even if no information is known about each car.
 
@@ -563,6 +564,18 @@ Reasons:
 - If Glides adds new ways for inspectors to enter data, it can produce the same event, instead of requiring backwards-incompatible new events.
 
 The `inputType` field on `TripsUpdated` was added as an escape hatch out of the abstraction, so that clients who want to can see the implementation detail of how the inspector created the update from Glides.
+
+## Alternative: Separate trip-added event
+The current RFC has added trips as a modified case of a TripUpdated object in the "trips-updated" event. Previous versions of the RFC had a separate "trip-added" event.
+
+Advantages to separate Added and Updated events:
+- Clients probably need to handle added and updated trips slightly differently.
+- Combining them creates more complicated cases and conditional requirements in the already-complicated TripsUpdated event.
+
+Advantages to combining them:
+- Clients only need to listen to one event for all service updates.
+- Better represents how TripAdded can contain basically the same information that TripUpdated can.
+- The TripsUpdated event can contain a list of objects, instead of needing a separate Batched event to combine arbitrary events. (The Batched event is not otherwise needed, because the other operator-signed-in and editors-changed events never happen at the same time as trips-updated.)
 
 # Prior art
 [Trike](https://github.com/mbta/trike) uses a similar approach to provide events to RTR for influencing predictions and to OCS Saver for future processing by LAMP / OPMI. These events come from the heavy-rail dispatching system, which uses another implementation of trainsheets. This approach is described in [RFC4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) and [RFC5](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md).
