@@ -84,13 +84,6 @@ A value that can either be an instance of T, `"unmodified"`, or `"cleared"`. For
 "cleared"
 ```
 
-### Dropped Reason
-- `reason` (string, required): free-text description about why a trip was dropped.
-```json
-{"reason": "staffing"}
-```
-It is represented as an objecto provide future extensibility if needed.
-
 ### Location
 One of:
 - `{"gtfsId": "<GTFS stop ID>"}`, where the GTFS `location_type` is 1 (station).
@@ -194,7 +187,8 @@ Fields in the object:
 - `consist` (array of Delta Car, optional): the cars assigned to perform this trip. If a car is `"cleared"`, then no car is currently assigned to that position in the consist. If a car is `"unmodified"` then the car is the value from the most-recent [Trip updated](#Trip-updated) event. The front car is listed first.
 - `scheduledOperators`: (array of Operator, optional): if present, the operators who were scheduled to operate this trip.
 - `operators` (array of Delta Operator, optional): the list of operators assigned to perform this trip. If an operator is `"cleared"`, then no operator is assigned to the car in that position in the consist. If the operator is `"unmodified"` then the operator is the value from the schedule or the most-recent [Trip updated](#Trip-updated) event. The operator of the front car is listed first.
-- `dropped`: (Dropped Reason or `false`, optional): if `false`, the trip is not dropped (and restored if previously dropped). If a [Dropped Reason](#dropped-reason), the reason the trip was dropped.
+- `dropped` (boolean, optional): whether the trip has been dropped. If `false`, the trip is not dropped (and restored if previously dropped). Added trips can be dropped and restored just like scheduled trips.
+- `droppedReason` ([DroppedReason](#DroppedReason) | null, optional): The reason the trip was dropped. SHOULD only exist if the trip has been dropped. SHOULD be `null` if the trip was restored.
 
 *Notes*
 - setting a new location or time does not modify the [Trip Key](#trip-key) for a scheduled trip.
@@ -221,6 +215,13 @@ New restrictions on existing fields:
 - If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
 - If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
 
+#### DroppedReason
+An object representing the reason that a trip was dropped.
+
+Fields:
+- `text` (string, required): free-text description about why a trip was dropped.
+
+Currently the reason is entered by inspectors in a free-text field. It's published in an object so that if Glides collects more structured data in the future, then extra fields can be added. If more fields are added, then a generated text description would be filled into the `text` field, and it would not be a breaking change.
 
 # Reference-level explanation
 ## Effects on RTR
