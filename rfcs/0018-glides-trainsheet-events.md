@@ -140,14 +140,6 @@ In order to reduce event duplication, a Trip Key is used to identify both added 
 - The added/scheduled distinction here is internal to Glides, and may not align with what is in other data sources. For example, an Added Trip in Glides may still correspond to a scheduled GTFS trip, and a Scheduled Trip may not appear in GTFS (due to track closures, for example).
 
 ## Events
-### Batched
-If multiple events are generated as a part of the same author action, then they can be combined into a single Batched event. This ensures that all of the events are kept together throughout the data pipeline.
-
-Event type: `com.mbta.ctd.glides.batched.v1`
-Fields in the event:
-- `author` (Author, optional): the human who performed the events, if it is the same for all the events in the `events` array. 
-- `events` (array of `{"type": string, "data": JSON}`): each element in the array is a CloudEvent including only the `type` and `data` field, and the `data` fields of the individual events SHOULD NOT re-include the `author` field. See [Examples](#examples) for an example.
-- `commment` (string, optional): free text field describing the action which caused the batch of events.
 
 ### Operator signed in
 At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They currently do this by physically signing a paper trainsheet: in the future, they will do this digitally.
@@ -159,36 +151,20 @@ Fields in the event:
 - `signedInAt` (RFC3999 timestamp): the time at which they signed in (separate from the `time` of the event)
 - `confirmation` (object): how the operator confirmed that they signed in. Some possibilities are their badge number (`{"type": "<badge number>"`}) or an RFID tag number (`{"rfid": "<RFID tag">}`). The specific formats may change: consumers SHOULD NOT depend on any specific format.
 
-### Trip added
-This creates a new trip in the timesheet. It may or may not be a new trip relative to GTFS (see the splitting a train reference example).
+### Trips Updated
+Glides has new information about trips. Consumers who want to know what trains are running should pay attention to this event, and don't need to pay attention to any other events.
 
-Event type: `com.mbta.ctd.glides.trip_added.v1`
+Event type: `com.mbta.ctd.glides.trips_updated.v1`
 Fields in the event:
-- `author` (Author): the inspector adding the trip.
-- `tripKey` (Trip Key): provides a unique identifier for the newly created trip.
-- `startLocation` (Location, conditionally required): where the trip will be starting. Required if `startTime` is specified.
-- `endLocation` (Location, conditionally required): where the trip will be ending. Required if `endTime` is specified.
-- `startTime` (Time, conditionally required): when the added trip is expected to depart `startLocation`.
-- `endTime` (Time, conditionally required): when the added trip is expected to arrive at `endLocation`.
-- `previousTripKey` (Trip Key, optional): links the newly created trip to the trip immediately before it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `endLocation` is specified and `endTime` is NOT specified.
-- `nextTripKey` (Trip Key, optional): links the newly created trip to the trip after it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `startLocation` is specified and `startTime` is NOT specified.
-- `consist` (array of (Car|`null`), optional, default: empty list): the cars assigned to perform this trip. If a car is `null`, then no car is currently assigned to that position in the consist. 
-- `operators` (array of (Operator|`null`), optional, default: empty list): the array of operators assigned to perform this trip. If an operator is null, then no operator is assigned to the car in that position in the consist.
-- `comment` (string, optional): free text with additional information about the trip.
+- `author` (Author): the inspector who inputed the new information.
+- `inputType` (string): the action the inspector performed in Glides that caused the update. There are many ways to update trips in Glides, and all updated information normalized into the same format in `tripUpdates`. This field indicates what the inspector was doing in Glides, for consumers who care not just about service, but also care about how inspectors are using Glides. Example values are `"add-trip"` or `"manage-headways"`, but no guarantees are given about what strings will be used.
+- `tripUpdates` (array of (TripUpdated|TripAdded)): The list of one or more trips that have new information.
 
-*Notes*
-- At least one of `startLocation` and `endLocation` is required.
-- If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
-- If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
-- The event SHOULD only include values which were explicitly included by the `author`: inferred values SHOULD NOT be included.
-- `consist` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
+#### TripUpdated
+This indicates that a trip was updated in some fashion:  consist, operators, departure time. The trip is either a scheduled trip, or an added trip that has already appeared in the events stream. Fields which are not present are not considered to be updated.
 
-### Trip updated
-This indicates that a trip was updated in some fashion:  consist, operators, departure time. This includes updates which confirm an arrival or departure time. Fields which are not present are not considered to be updated.
-
-Event type: `com.mbta.ctd.glides.trip_updated.v1`
-Fields in the event:
-- `author` (Author): the inspector adding the trip.
+Fields in the object:
+- `type` (string): `"updated"|"added"`. Determines whether this is a `TripUpdated` object or a `TripAdded` object. If it's `"added"`, then it's a `TripAdded` object, see below. Subsequent updates to previously-added trips have `type` `"updated"`.
 - `tripKey` (Trip Key): which trip is being updated.
 - `comment` (string, optional): free text information about the trip.
 - `startLocation` (Location, optional): the new destination of the train.
@@ -202,7 +178,29 @@ Fields in the event:
 
 *Notes*
 - setting a new location or time does not modify the [Trip Key](#trip-key) for a scheduled trip.
-- `consist` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 for a 2-car consist.
+- `consist` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 ted
+
+#### TripAdded
+There is a new trip, that does not appear in the Glides' schedule data. Any added trips will appear exactly once a TripAdded object, and any future updates will appear as TripUpdated objects.
+"Added" is relative to the schedule that Glides uses, and an added trip may correspond to a trip that appears in a different schedule.
+
+The event SHOULD only include values which were explicitly included by the `author`: inferred values SHOULD NOT be included.
+
+TripAdded objects are the same as TripUpdated, with the following changes, so that the new trip can be placed in the appropriate order within existing trips:
+
+New fields:
+- `nextTripKey` (Trip Key, optional): links the newly created trip to the trip after it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `startLocation` is specified and `startTime` is NOT specified.
+- `previousTripKey` (Trip Key, optional): links the newly created trip to the trip immediately before it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `endLocation` is specified and `endTime` is NOT specified.
+
+New restrictions on existing fields:
+- `type` (string): MUST be `"added"`.
+- `tripKey` (TripKey): will always be the added trip form, and never the scheduled trip form.
+- `startLocation` (Location, conditionally required): where the trip will be starting. Required if `startTime` is specified.
+- `endLocation` (Location, conditionally required): where the trip will be ending. Required if `endTime` is specified.
+- At least one of `startLocation` and `endLocation` is required.
+- If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
+- If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
+
 
 # Reference-level explanation
 ## Effects on RTR
