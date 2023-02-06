@@ -165,6 +165,7 @@ Fields in the object:
 
 *Notes*
 - setting a new location or time does not modify the [Trip Key](#trip-key) for a scheduled trip.
+- if a trip is dropped, fields that are then irrelevant (such as `startTime` or `cars`) SHOULD NOT be set.
 
 #### TripAdded
 There is a new trip, that does not appear in the Glides' schedule data. Any added trips will appear exactly once a TripAdded object, and any future updates will appear as TripUpdated objects.
@@ -549,22 +550,19 @@ However, this is also limiting:
 
 While the ladder view in Glides understands GTFS-RT, the trainsheet information comes directly from HASTUS on a quarterly basis. It does not have updated trip IDs, so RTR would need to process the data anyways: it could not be provided directly to riders.
 
-## Alternative: separate Dropped and Restored Trip events
-Advantage:
-- it disallows for confusing [Trip updated](#Trip-updated) events. How should clients interpret a [Trip updated](#Trip-updated) event which included `dropped`, along with other changes to the trip?
-Disadvantages:
-- requires two additional events
+## Alternative: More specific trip update events
+Earlier drafts of this RFC included some events for more specific kinds of trip updates, such as a "trip-dropped" event or a "trip-departed" event. It was even considered to use separate events for each updatable field.
 
-## Alternative: split update types into different events
-Examples:
-- set departure time
-- set/unset operator
-- set/unset consist
+More events and more detailed events would have allowed more precise data to be sent in some cases, and would have better reflected the actions that inspectors take in Glides. For example, a specific "trip-dropped" event could prevent confusing data like setting a `startTime` in the same event as dropping a trip, and a "manage-headway" event could better portray the inspector's intent than a list of generic `TripUpdated` objects with new times.
 
-The current trainsheet interface does not distinguish between these cases: all changes are saved at the same time. Functionality to separate them would need to be added to Glides, or multiple events would need to be written in a batch, increasing duplication.
+It was instead decided that all trip updates should result in the same generic `TripsUpdated` event, with a list of `TripUpdated` objects that don't reference the action the inspector took, or the location of the inspector.
 
-## Alternative: other levels of abstraction
-The current level of abstraction for events represents a medium level of abstraction for changes to service. A higher level might be to have events for the "Manage Headways" feature, for example. However, there will always be a need for more granular events, as inspectors make changes to individual trips. Even more granular events (such as inspector login, or particular buttons being clicked) are not useful to consumers in interpreting the expected changes to service.
+Reasons:
+- Clients only have to handle one event in order to get all updates that affect passenger service.
+- The event (and clients) can focus on new information about service, instead of on what happened within Glides.
+- If Glides adds new ways for inspectors to enter data, it can produce the same event, instead of requiring backwards-incompatible new events.
+
+The `inputType` field on `TripsUpdated` was added as an escape hatch out of the abstraction, so that clients who want to can see the implementation detail of how the inspector created the update from Glides.
 
 # Prior art
 [Trike](https://github.com/mbta/trike) uses a similar approach to provide events to RTR for influencing predictions and to OCS Saver for future processing by LAMP / OPMI. These events come from the heavy-rail dispatching system, which uses another implementation of trainsheets. This approach is described in [RFC4](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md) and [RFC5](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md).
