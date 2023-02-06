@@ -267,86 +267,142 @@ Consumers MUST ignore event `type`s that they do not understand.
 Consumers MUST ignore fields in events (and in nested objects in events) which they do not understand, trusting that any additional fields are not required to process the event.
 
 ## Examples
-### Managing headways
-- Inspector Alice (badge number: 123) is working at Boston College
-- There are four scheduled trips going to Government Center: 9:55am, 10:00am, 10:05am, and 10:10am
-- Due to staffing issues, the 10:05am trip is dropped
-- Using the "Manage Headways" feature, Alice changes the expected departure times of the remaining trips to 9:56am, 10:02am, and 10:08am.
+For all other examples after the first, `specversion`, `source`, `time`, and `id` fields are elided from the top level, and `author` is elided from `data`.
+
+### Starting Editing
+Inspector Alice (badge number: 123) starts her shift at Boston College. The previous inspector (badge number: 456) did not stop editing, so Alice clicks the "Take Over" button in Glides.
+
 ```json
 {
-  "type": "com.mbta.ctd.glides.trip_dropped.v1",
+  "type": "com.mbta.ctd.glides.editors_changed.v1",
   "specversion": "1.0",
   "source": "glides.mbta.com",
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
-  "time": "2023-01-20T09:50:00-05:00",
+  "time": "2023-01-20T09:30:00-05:00",
   "data": {
     "author": {
       "emailAddress": "ainspector@example.com",
       "badgeNumber": "123",
       "location": {"gtfsId": "place-lake"}
     },
-    "tripKey": {
-      "serviceDate": "2022-01-20",
-      "startLocation": {"gtfsId": "place-lake"},
-      "endLocation": {"gtfsId": "place-gover"},
-      "startTime": "10:05:00",
-      "endTime": "10:52:00"
-    },
-    "reason": "staffing"
+    "changes": [
+      {
+        "type": "stop",
+        "location": {"gtfsId": "place-lake"},
+        "emailAddress": "binspector@example.com",
+        "badgeNumber": "456"
+      },
+      {
+        "type": "start",
+        "location": {"gtfsId": "place-lake"},
+        "emailAddress": "ainspector@example.com",
+        "badgeNumber": "123"
+      }
+    ]
   }
 }
-# specversion, source, id elided
+```
+
+### Operator Sign In
+
+Operator Charlie (badge: 789) returns from his break and stops by Inspector Alice's booth. Alice checks him as fit for duty, and he signs in by tapping his badge to the RFID reader attached to Alice's computer.
+
+```json
 {
-  "type": "com.mbta.ctd.glides.batched.v1",
-  "time": "2023-01-20T09:50:10-05:00",
+  "type": "com.mbta.ctd.glides.operator_signed_in.v1",
   "data": {
-    "author": {
-      "emailAddress": "ainspector@example.com",
-      "badgeNumber": "123",
-      "location": {"gtfsId": "place-lake"}
-    },
-    "events": [
+    /* author elided */
+    "operator": "789",
+    "signedInAt": "2023-01-20T09:45:00-05:00",
+    "confirmation": "tap"
+  }
+}
+```
+
+### Managing headways
+- There are four scheduled trips going to Government Center: 9:55am, 10:00am, 10:05am, and 10:10am
+- Due to staffing issues, the 10:05am trip is dropped, along with its return trip.
+- Using the "Manage Headways" feature, Alice changes the expected departure times of the remaining trips to 9:56am, 10:02am, and 10:08am.
+
+(Scheduled data is unrealistically abbreviated for this example. See the next example for realistic scheduled data.)
+
+```json
+{
+  "type": "com.mbta.ctd.glides.trips_updated.v1",
+  "data": {
+    /* author elided */
+    "inputType": "dropped-trip",
+    "tripUpdates": [
       {
-        "type": "com.mbta.ctd.glides.trip_updated.v1",
-        "data": {
-          "tripKey": {
-            "serviceDate": "2022-01-20",
-            "startLocation": {"gtfsId": "place-lake"},
-            "endLocation": {"gtfsId": "place-gover"},
-            "startTime": "09:55:00",
-            "endTime": "10:42:00"
-          },
-          "location": {"gtfsId": "place-lake"},
-          "startTime": "9:56:00"
-        }
+        "type": "updated",
+        "tripKey": {
+          "serviceDate": "2022-01-20",
+          "startLocation": {"gtfsId": "place-lake"},
+          "endLocation": {"gtfsId": "place-gover"},
+          "startTime": "10:05:00",
+          "endTime": "10:52:00"
+        },
+        "dropped": true,
+        "droppedReason": {"text": "staffing"},
+        "scheduled": {"cars": [{}]}
       },
       {
-        "type": "com.mbta.ctd.glides.trip_updated.v1",
-        "data": {
-          "tripKey": {
-            "serviceDate": "2022-01-20",
-            "startLocation": {"gtfsId": "place-lake"},
-            "endLocation": {"gtfsId": "place-gover"},
-            "startTime": "10:00:00",
-            "endTime": "10:47:00"
-          },
-          "location": {"gtfsId": "place-lake"},
-          "startTime": "10:02:00"
-        }
+        "type": "updated",
+        "tripKey": {
+          "serviceDate": "2022-01-20",
+          "startLocation": {"gtfsId": "place-gover"},
+          "endLocation": {"gtfsId": "place-lake"},
+          "startTime": "10:55:00",
+          "endTime": "10:42:00"
+        },
+        "dropped": true,
+        "droppedReason": {"text": "staffing"},
+        "scheduled": {"cars": [{}]}
+      }
+    ]
+  }
+}
+{
+  "type": "com.mbta.ctd.glides.trips_updated.v1",
+  "data": {
+    /* author elided */
+    "inputType": "manage-headways",
+    "tripUpdates": [
+      {
+        "type": "updated",
+        "tripKey": {
+          "serviceDate": "2022-01-20",
+          "startLocation": {"gtfsId": "place-lake"},
+          "endLocation": {"gtfsId": "place-gover"},
+          "startTime": "09:55:00",
+          "endTime": "10:42:00"
+        },
+        "startTime": "9:56:00",
+        "scheduled": {"cars": [{}]}
       },
       {
-        "type": "com.mbta.ctd.glides.trip_updated.v1",
-        "data": {
-          "tripKey": {
-            "serviceDate": "2022-01-20",
-            "startLocation": {"gtfsId": "place-lake"},
-            "endLocation": {"gtfsId": "place-gover"},
-            "startTime": "10:10:00",
-            "endTime": "10:57:00"
-          },
-          "location": {"gtfsId": "place-lake"},
-          "startTime": "10:08:00"
-        }
+        "type": "updated",
+        "tripKey": {
+          "serviceDate": "2022-01-20",
+          "startLocation": {"gtfsId": "place-lake"},
+          "endLocation": {"gtfsId": "place-gover"},
+          "startTime": "10:00:00",
+          "endTime": "10:47:00"
+        },
+        "startTime": "10:02:00",
+        "scheduled": {"cars": [{}]}
+      },
+      {
+        "type": "updated",
+        "tripKey": {
+          "serviceDate": "2022-01-20",
+          "startLocation": {"gtfsId": "place-lake"},
+          "endLocation": {"gtfsId": "place-gover"},
+          "startTime": "10:10:00",
+          "endTime": "10:57:00"
+        },
+        "startTime": "10:08:00",
+        "scheduled": {"cars": [{}]}
       }
     ]
   }
@@ -354,132 +410,130 @@ Consumers MUST ignore fields in events (and in nested objects in events) which t
 ```
 
 ### Splitting a 2-car train into two 1-car trips
-- Inspector Alice (badge number: 123) is working at Boston College
 - There are two scheduled trips: 9:55am and 10:00am
 - Operator A (badge number: 456) and Operator B (badge number: 567) are scheduled to perform the 9:55am
 - Only 1 trainset (3800 and 3850) is available
 - In order to maintain headways, Inspector Alice will split the trainset
 - Operator A will take 3800 and run the 9:55am
 - Operator B will take 3850 and run the 10:00am
+- Alice does this by dropping the second trip and adding a new one-car trip (and also its return). In real life she would probably assign B to the 2nd trip, and all the trips would be round trips, but doing it this way provides an example of adding a trip.
 
 ```json
 {
-  "specversion": "1.0",
-  "type": "com.mbta.ctd.glides.operator-signed-in.v1",
-  "source": "glides.mbta.com",
-  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
-  "time": "2023-01-20T09:45:10-05:00",
+  "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
-    "author": {
-      "emailAddress": "ainspector@example.com",
-      "badgeNumber": "123",
-      "location": {"gtfsId": place-lake"}
-    },
-    "operator": {
-      "badgeNumber": "456"
-    },
-    "signedInAt": "2023-01-20T09:45:00-05:00"
-  }
-}
-# further specversion, source, time, and ID fields elided from the top level
-# author elided from underneath "data"
-{
-  "type": "com.mbta.ctd.glides.operator-signed-in.v1",
-  "data": {
-    "operator": {
-      "badgeNumber": "567"
-    },
-    "signedInAt": "2023-01-20T09:45:00-05:00"
-  }
-}
-{
-  "type": "com.mbta.ctd.glides.trip_dropped.v1",
-  "data": {
-    "tripKey": {
-      "serviceDate": "2022-01-20",
-      "startLocation": {"gtfsId": "place-lake"},
-      "endLocation": {"gtfsId": "place-gover"},
-      "startTime": "10:00:00",
-      "endTime": "10:47:00"
-    },
-    "reason": "ran as single"
-  }
-}
-{
-  "type": "com.mbta.ctd.glides.trip_updated.v1",
-  "data": {
-    "tripKey": {
-      "serviceDate": "2022-01-20",
-   	  "startLocation": {"gtfsId": "place-lake"},
-      "endLocation": {"gtfsId": "place-gover"},
-      "startTime": "09:55:00",
-      "endTime": "10:42:00"
-
-    },
-    "operators": [
-      {"badgeNumber": "456"}
-    ],
-    "consist": [
-      {"label": "3800"}
-    ],
-    "comment": "single"
-  }
-}
-{
-  "type": "com.mbta.ctd.glides.batched.v1",
-  "time": "2023-01-20T09:50:15-05:00",
-  "data": {
-    "events": [
+    "inputType": "dropped-trip",
+    "updatedTrips": [
       {
-        "type": "com.mbta.ctd.glides.trip_added.v1",
-        "data": {
-          "tripKey": {
-            "serviceDate": "2022-01-20",
-            "id": "ADDED-1"
-          },
+        "type": "updated",
+        "tripKey": {
+          "serviceDate": "2022-01-20",
           "startLocation": {"gtfsId": "place-lake"},
+          "endLocation": {"gtfsId": "place-gover"},
           "startTime": "10:00:00",
-          "nextTripKey": {
-            "serviceDate": "2022-01-20",
-            "id": "ADDED-2"
-          },
-          "consist": [
+          "endTime": "10:47:00"
+        },
+        "dropped": true,
+        "droppedReason": {"text": "ran as single"},
+        "scheduled": {
+          "cars": [
             {
-              "label": "3850"
-            }
-          ],
-          "operators": [
+              "run": "506",
+              "operator": "678",
+            },
             {
-              "badgeNumber": "567"
+              "run": "507",
+              "operator": "789",
             }
-          ],
-          "comment": "single"
+          ]
         }
+      }
+    ]
+  }
+}
+{
+  "type": "com.mbta.ctd.glides.trips_updated.v1",
+  "data": {
+    /* author elided */
+    "inputType": "edit-trip",
+    "updatedTrips": [
+      {
+        "type": "updated",
+        "tripKey": {
+          "serviceDate": "2022-01-20",
+          "startLocation": {"gtfsId": "place-lake"},
+          "endLocation": {"gtfsId": "place-gover"},
+          "startTime": "09:55:00",
+          "endTime": "10:42:00"
+        },
+        "comment": "single",
+        "cars": [
+          {
+            "carNumber": "3800",
+            "operator": "456"
+          }
+          /* note that there is no second car, this is how the second car is removed */
+        ],
+        "scheduled": {
+          "cars": [
+            {
+              "run": "504",
+              "operator": "456",
+            },
+            {
+              "run": "505",
+              "operator": "567",
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+{
+  "type": "com.mbta.ctd.glides.trips_updated.v1",
+  "data": {
+    /* author elided */
+    "inputType": "add-trip",
+    "updatedTrips": [
+      {
+        "type": "added",
+        "tripKey": {
+          "serviceDate": "2022-01-20",
+          "id": "ADDED-1"
+        },
+        "startLocation": {"gtfsId": "place-lake"},
+        "startTime": "10:00:00",
+        "nextTripKey": {
+          "serviceDate": "2022-01-20",
+          "id": "ADDED-2"
+        },
+        "cars": [
+          {
+            "carNumber": "3850",
+            "operator": "567"
+          }
+        ],
+        "scheduled": null
       },
       {
-        "type": "com.mbta.ctd.glides.trip_added.v1",
-        "data": {
-          "tripKey": {
-            "serviceDate": "2022-01-20",
-            "id": "ADDED-2"
-          },
-          "endLocation": {"gtfsId": "place-lake"},
-          "previousTripKey": {
-            "serviceDate": "2022-01-20",
-            "id": "ADDED-1"
-          },
-          "consist": [
-            {
-              "label": "3850"
-            }
-          ],
-          "operators": [
-            {
-              "badgeNumber": "567"
-            }
-          ],
-          "comment": "single"
-        }
+        "type": "added",
+        "tripKey": {
+          "serviceDate": "2022-01-20",
+          "id": "ADDED-2"
+        },
+        "endLocation": {"gtfsId": "place-lake"},
+        "previousTripKey": {
+          "serviceDate": "2022-01-20",
+          "id": "ADDED-1"
+        },
+        "cars": [
+          {
+            "carNumber": "3850",
+            "operator": "567"
+          }
+        ],
+        "scheduled": null
       }
     ]
   }
@@ -493,26 +547,25 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
 - The 1:30am trip is being held 15 minutes to wait for a final Red Line train
 ```json
 {
-  "specversion": "1.0",
-  "type": "com.mbta.ctd.glides.trip_updated.v1",
-  "source": "glides.mbta.com",
-  "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
+  "type": "com.mbta.ctd.glides.trips_updated.v1",
   "time": "2023-01-23T01:25:00-05:00",
   "data": {
-    "author": {
-      "emailAddress": "ainspector@example.com",
-      "badgeNumber": "123",
-      "location": {"gtfsId": "place-matt"}
-    },
-    "tripKey": {
-      "serviceDate": "2023-01-22",
-      "startLocation": {"gtfsId": "place-matt"},
-      "endLocation": {"gtfsId": "place-ashmt"},
-      "startTime": "25:30:00",
-      "endTime": "25:38:00"
-    },
-    "location": {"gtfsId": "place-matt"},
-    "startTime": "25:45:00"
+    /* author elided */
+    "inputType": "edit-trip",
+    "updatedTrips": [
+      {
+        "type": "updated",
+        "tripKey": {
+          "serviceDate": "2023-01-22",
+          "startLocation": {"gtfsId": "place-matt"},
+          "endLocation": {"gtfsId": "place-ashmt"},
+          "startTime": "25:30:00",
+          "endTime": "25:38:00"
+        },
+        "location": {"gtfsId": "place-matt"},
+        "startTime": "25:45:00"
+      }
+    ]
   }
 }
 ```
