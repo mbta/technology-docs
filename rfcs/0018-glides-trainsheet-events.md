@@ -65,25 +65,6 @@ or
 }
 ```
 
-### Car
-Cars (individual parts of a train consist) will be described by their 4 digit number.
-```json
-{
-  "label": "3800"
-}
-```
-It is represented as an object to provide future extensibility if needed.
-
-### Delta T
-A value that can either be an instance of T, `"unmodified"`, or `"cleared"`. For example, Delta Car can be
-```json
-{ "label": "3800"}
-# or
-"unmodified"
-# or 
-"cleared"
-```
-
 ### Location
 One of:
 - `{"gtfsId": "<GTFS stop ID>"}`, where the GTFS `location_type` is 1 (station).
@@ -184,15 +165,13 @@ Fields in the object:
 - `endLocation` (Location, optional): the new destination of the train.
 - `startTime` (Time, optional): if present, the new time that the train is expected to depart `startLocation` (or the existing `startLocation` of the trip).
 - `endTime` (Time, optional): if present, the new time that the train is expected to arrive at `endLocation` (or the existing `endLocation` of the trip).
-- `consist` (array of Delta Car, optional): the cars assigned to perform this trip. If a car is `"cleared"`, then no car is currently assigned to that position in the consist. If a car is `"unmodified"` then the car is the value from the most-recent [Trip updated](#Trip-updated) event. The front car is listed first.
-- `scheduledOperators`: (array of Operator, optional): if present, the operators who were scheduled to operate this trip.
-- `operators` (array of Delta Operator, optional): the list of operators assigned to perform this trip. If an operator is `"cleared"`, then no operator is assigned to the car in that position in the consist. If the operator is `"unmodified"` then the operator is the value from the schedule or the most-recent [Trip updated](#Trip-updated) event. The operator of the front car is listed first.
+- `cars` (array of [Car](#Car), optional): array of length 1 or 2, containing the car numbers and operators for each car in the train assigned to the trip. If absent, there are no changes to any cars. If present, the length of the array is the length of the train. In a two car train, the front car is listed first.
 - `dropped` (boolean, optional): whether the trip has been dropped. If `false`, the trip is not dropped (and restored if previously dropped). Added trips can be dropped and restored just like scheduled trips.
 - `droppedReason` ([DroppedReason](#DroppedReason) | null, optional): The reason the trip was dropped. SHOULD only exist if the trip has been dropped. SHOULD be `null` if the trip was restored.
+- `scheduled` ([Scheduled](#Scheduled) | null): For trips in Glides' schedule, this represents the scheduled data for the trip. It will always be present and won't change between subsequent updates to the same trip. For added trips, this will always be null.
 
 *Notes*
 - setting a new location or time does not modify the [Trip Key](#trip-key) for a scheduled trip.
-- `consist` and `operators` MUST be the length of the train: length 1 for a 1-car consist, length 2 ted
 
 #### TripAdded
 There is a new trip, that does not appear in the Glides' schedule data. Any added trips will appear exactly once a TripAdded object, and any future updates will appear as TripUpdated objects.
@@ -214,6 +193,32 @@ New restrictions on existing fields:
 - At least one of `startLocation` and `endLocation` is required.
 - If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
 - If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
+
+Glides SHOULD include a `cars` field to indicate the length of the train, even if no information is known about each car.
+
+#### Car
+Fields:
+- `carNumber` (string, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
+- `operator` (Operator | `"cleared"`, optional): the operator assigned to this car, or the string `"cleared"` if the inspector has unassigned the operator without reassigning another. If the field is absent, it is not modified.
+
+An empty object `{}` is valid if nothing about the car has been modified.
+
+The length of `cars`, always reflects the known length of the train.
+
+#### Scheduled
+Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never modified by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
+
+Fields:
+- `cars` (array of [ScheduledCar](#ScheduledCar)): Array of length 1 or 2. The length reflects the scheduled length of the train. In a 2 car train, the front car is listed first.
+
+It does not include time and location fields, because for scheduled trips those fields are already in [Trip Key](#Trip-Key)
+
+#### ScheduledCar
+Fields:
+- `run` (string, optional): The run number scheduled to the trip.
+- `operator` (Operator, optional): The operator who is scheduled to operate the run that day, and therefore scheduled to do the trip.
+
+If fields are missing from ScheduledCar, it is not known who is scheduled to operate that car. An empty object is valid if we know the car is scheduled to operate but don't know anything else about it.
 
 #### DroppedReason
 An object representing the reason that a trip was dropped.
