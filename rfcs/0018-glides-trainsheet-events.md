@@ -230,7 +230,7 @@ These inputs are similar to what RTR is already receiving from OCS.
 One key difference is that the trainsheets do not record the destination or route for trips, so added trips currently only include one end of the trip. RTR SHOULD assume a default pattern for these trips.
 
 ## Short-term storage
-Events are only maintained in Kinesis for 24 hours. Some events (such as a [Trip updated][#trip-updated] which modifies the operators) can affect trips more than 24 hours in the future. Clients SHOULD maintain records internally of these future changes. Clients MUST not expect that reading the Kinesis stream from the trim horizon will return all events affecting the current service day.
+Events are only maintained in Kinesis for 24 hours. Some events (such as a [Trips updated][#trips-updated] which modifies the operators) can affect trips more than 24 hours in the future. Clients SHOULD maintain records internally of these future changes. Clients MUST NOT expect that reading the Kinesis stream from the trim horizon will return all events affecting the current service day. Clients MUST tolerate receiving updates for events that reference unseen past events (such as an update to an added trip that the client did not see get added, or a [`EditorsChanged`](#Editors-Changed) event that stops editing for an inspector the client did not see start editing).
 
 ## Long-term storage / querying
 For future use, events will be archived to S3, using Kinesis Firehose. They can either be sent to LAMP's existing folder, or a new folder. As the stream contains potential PII (operator badge information) any long-term storage (S3, database) MUST be encrypted at rest. Only Glides environments which map to a Data Platform / LAMP environment will have their events recorded.
@@ -260,7 +260,7 @@ Producers SHOULD continue to produce versions of the event while there are still
 ### Consumer requirements
 
 Consumers MUST ignore event `type`s that they do not understand.
-Consumers MUST ignore fields in events which they do not understand, trusting that any additional fields are not required to process the event.
+Consumers MUST ignore fields in events (and in nested objects in events) which they do not understand, trusting that any additional fields are not required to process the event.
 
 ## Examples
 ### Managing headways
