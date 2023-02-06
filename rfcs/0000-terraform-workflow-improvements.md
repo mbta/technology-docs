@@ -230,7 +230,7 @@ Once a new root module is set up for each engineering team, we'll need to:
 - Migrate each team's development and staging resources out of the `dev` module and into their new team-based module
 - Update references to dependent resources that remain in other modules to use data sources or [remote state](https://developer.hashicorp.com/terraform/language/state/remote-state-data)
 
-Note that production resources will remain in a single `prod` root module in the short term, but will likely eventually also be moved to team-based modules a later date. This will allow us to vet the changes proposed in this document, while also making sure we're adhering to the stricter security requirements for production that are discussed in the [Scalr workflow for production][scalr-workflow-production] section.
+Note that production resources will remain in a single `prod` root module in the short term, but will likely eventually also be moved to team-based modules at a later date. This stepped approach will allow us to vet the changes proposed in this document, while also making sure we're adhering to the stricter security requirements for production that are discussed in the [Scalr workflow for production][scalr-workflow-production] section.
 
 ### Root Module Naming Convention
 [root-module-naming-convention]: #root-module-naming-convention
@@ -271,7 +271,7 @@ Root modules associated with the "CTD Production" AWS account that should be ren
 - `onprem_prod` → multiple modules:
   - move SSM resources to `aws-ctd-main-base`
   - move applications to `aws-ctd-main-prod` for now
-- `prod` → `aws-ctd-main-prod` (to remain as a single module for now)
+- `prod` → `aws-ctd-main-prod` (to remain as a single module in the short term)
 - `restricted` → `aws-ctd-main-restricted`
 
 Root modules to remain as-is:
@@ -462,7 +462,7 @@ Each root module will have a GitHub-integrated Scalr workspace. Scalr will autom
 
 Production will mirror the development/staging context, with a few notable differences:
 
-1. For the time being, all resources will remain in the central `prod` module, which will be [renamed][root-module-naming-convention] to `aws-ctd-main-prod` and have its own GitHub-integrated Scalr workspace.
+1. In the short term, all resources will remain in the central `prod` module, which will be [renamed][root-module-naming-convention] to `aws-ctd-main-prod` and have its own GitHub-integrated Scalr workspace. Once the workflow has been vetted and security requirements are well understood, we can begin to move production resources into team-based modules.
 2. All calls to un-versioned modules will pinned to particular git hashes instead of relative paths, in order to protect the production context from changes that are made to un-versioned modules.
 
 As before, Scalr will automatically run `terraform plan` when a pull request is opened, and attempt to automatically run `terraform apply` on merge.
@@ -824,7 +824,6 @@ in this or subsequent RFCs. The section merely provides additional information.
 
 Ideas that are out of scope for the work described in this RFC, but are potentially worth implementing later:
 
-- Splitting production resources out of the `prod` module and into team-based root modules
 - Handling the [module testing workflow][reference-module-testing] as a GitHub Actions workflow instead of manually
 - Publishing more of our modules in [Terraform's public registry][terraform-module-publishing]
 - Investigating [Terragrunt](https://terragrunt.gruntwork.io/) as a way to standardize backend and provider configuration and reduce redundant configuration
