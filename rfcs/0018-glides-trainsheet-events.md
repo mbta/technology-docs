@@ -70,15 +70,6 @@ One of:
 - `{"gtfsId": "<GTFS stop ID>"}`, where the GTFS `location_type` is 1 (station).
 - `{"glidesId": "<other>"}`: Other unique identifier for non-revenue locations, internal to Glides.
 
-### Operator
-Operators will be described by their badge number:
-```json
-{
-  "badgeNumber": "123"
-}
-```
-It is represented as an object to provide future extensibility if needed.
-
 ### Time
 Time in the `HH:MM:SS` format. The time is measured from "noon minus 12h" of the service day (effectively midnight except for days on which daylight savings time changes occur). For times occurring after midnight, enter the time as a value greater than 24:00:00 in `HH:MM:SS` local time for the day on which the trip schedule begins.  Effectively, a [GTFS Time](https://github.com/google/transit/blob/master/gtfs/spec/en/reference.md#field-types) but without support for `H:MM:SS` times.
 > _Example: `04:30:00` for 4:30AM or `25:35:00` for 1:35AM on the next day._
@@ -141,7 +132,7 @@ At the start of their shift, operators need to confirm that they are fit-for-dut
 Event type: `com.mbta.ctd.glides.operator_signed_in.v1`
 Fields in the event:
 - `author` (Author): the inspector who signed in the operator
-- `operator` (Operator): the operator who signed in
+- `operator` (string): the badge number of the operator who signed in
 - `signedInAt` (RFC3999 timestamp): the time at which they signed in (separate from the `time` of the event)
 - `confirmation` (object): how the operator confirmed that they signed in. Some possibilities are their badge number (`{"type": "<badge number>"`}) or an RFID tag number (`{"rfid": "<RFID tag">}`). The specific formats may change: consumers SHOULD NOT depend on any specific format.
 
@@ -198,8 +189,8 @@ Glides SHOULD include a `cars` field to indicate the length of the train, even i
 
 #### Car
 Fields:
-- `carNumber` (string, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
-- `operator` (Operator | `"cleared"`, optional): the operator assigned to this car, or the string `"cleared"` if the inspector has unassigned the operator without reassigning another. If the field is absent, it is not modified.
+- `carNumber` (string | `"cleared"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
+- `operator` (string | `"cleared"`, optional): the badge number of the operator assigned to this car, or the string `"cleared"` if the inspector has unassigned the operator without reassigning another. If the field is absent, it is not modified.
 
 An empty object `{}` is valid if nothing about the car has been modified.
 
@@ -216,7 +207,7 @@ It does not include time and location fields, because for scheduled trips those 
 #### ScheduledCar
 Fields:
 - `run` (string, optional): The run number scheduled to the trip.
-- `operator` (Operator, optional): The operator who is scheduled to operate the run that day, and therefore scheduled to do the trip.
+- `operator` (string, optional): The badge number of the operator who is scheduled to operate the run that day, and therefore scheduled to do the trip.
 
 If fields are missing from ScheduledCar, it is not known who is scheduled to operate that car. An empty object is valid if we know the car is scheduled to operate but don't know anything else about it.
 
