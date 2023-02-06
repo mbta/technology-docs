@@ -40,7 +40,7 @@ The partition key will be a hash of the station at which the inspector is workin
 
 As the stream will include potential PII (operator badge information) it MUST be configured as encrypted-at-rest. 
 
-Multiple events can be included in a single Kinesis record, by wrapping them in a JSON array. This is an optimization for improving write speeds: further steps in the Kinesis pipeline may break up or rearrange these arrays. If multiple events are part of the same user action, the [Batched](#Batched) event SHOULD be used to combine them.
+Multiple events can be included in a single Kinesis record, by wrapping them in a JSON array. This is an optimization for improving write speeds: further steps in the Kinesis pipeline may break up or rearrange these arrays.
 
 ## Value types
 
