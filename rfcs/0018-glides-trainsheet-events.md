@@ -141,6 +141,26 @@ In order to reduce event duplication, a Trip Key is used to identify both added 
 
 ## Events
 
+### Editors Changed
+Operator sign in and out of editing specific trainsheets. This event publishes changes to who is editing. Since one action by an inspector might result in multiple changes, for example if they sign out of one location and in to another, the changes are published in a list.
+
+In practice, we limit each location to have only one editor, and limit each editor to only one location, but that rule may or may not change and this data in this event doesn't guarantee that.
+
+Note that the author may or may not match the editors in `changes`, since inspectors can change whether other people are editing. For example, when an inspector takes over editing at a location, they may sign out the previous editor. Then they would issue a `stop` change for the previous editor and a `start` change for themself.
+
+Event type: `com.mbta.ctd.glides.editors-changed.v1`
+Fields in the event:
+- `author` (Author): the inspector who made the changes
+- `changes` (array of EditorChange): a list of start and stop editing events
+
+#### EditorChange
+Fields in the object:
+- `type` (string `"start"`|`"stop"`): Whether the editor started or stopped editing.
+- `location` (Location): the location the editor started or stopped managing.
+- `emailAddress` (string): the e-mail of the editor.
+- `badgeNumber` (string, optional): the badge number of the editor.
+
+
 ### Operator signed in
 At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They currently do this by physically signing a paper trainsheet: in the future, they will do this digitally.
 
