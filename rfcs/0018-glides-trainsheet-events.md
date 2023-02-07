@@ -44,27 +44,6 @@ Multiple events can be included in a single Kinesis record, by wrapping them in 
 
 ## Value types
 
-### Author
-Each event which is caused by a person will include an `author` key, indicating who performed the given intervention.
-
-- `emailAddress` (string): the e-mail of the logged-in user.
-- `badgeNumber` (string, optional): the badge number of the logged-in user.
-- `location` ([Location](#Location), optional): the location the logged-in user is managing.
-```json
-{
-  "emailAddress": "name@example.com",
-  "badgeNumber": "123456",
-  "location": {"gtfsId": "place-lake"}
-}
-
-or
-
-{
-  "emailAddress": "pswartz@mbta.com",
-  "location": {"gtfsId": "place-matt"}
-}
-```
-
 ### Car
 Fields:
 - `carNumber` (string | `"cleared"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
@@ -89,10 +68,23 @@ Fields in the object:
 - `emailAddress` (string): the e-mail of the editor.
 - `badgeNumber` (string, optional): the badge number of the editor.
 
+### GlidesUser
+Fields:
+- `emailAddress` (string): the e-mail of the user.
+- `badgeNumber` (string, optional): the badge number of the user. Not all Glides users  have a badge number (for example, CTD contractors).
+
 ### Location
 One of:
 - `{"gtfsId": "<GTFS stop ID>"}`, where the GTFS `location_type` is 1 (station).
 - `{"glidesId": "<other>"}`: Other unique identifier for non-revenue locations, internal to Glides.
+
+### Metadata
+Information about how the event was created by Glides. All important outputs from Glides will be elsewhere in the event data, but data here might be useful for consumers who care about how inspectors are using Glides.
+
+Fields:
+- `author` ([GlidesUser](#GlidesUser), optional): The logged-in user whose action triggered the event.
+- `inputType` (string, optional): the action that the user did in Glides. This field exists because the event data on its own may not specify how the data was entered, for example all trainsheet updates are normalized into a generic format in `tripUpdates`. Example values for this field are `"add-trip"` or `"manage-headways"`, but no guarantees are given about what strings will be used or which actions the field will be populated for.
+- `location` ([Location](#Location), optional): the location the logged-in user is managing.
 
 ### Scheduled
 Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never overriden by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
@@ -117,7 +109,7 @@ Time in the `HH:MM:SS` format. The time is measured from "noon minus 12h" of the
 There is a new trip, that does not appear in the Glides' schedule data. Any added trips will appear exactly once a TripAdded object, and any future updates will appear as TripUpdated objects.
 "Added" is relative to the schedule that Glides uses, and an added trip may correspond to a trip that appears in a different schedule.
 
-The event SHOULD only include values which were explicitly included by the `author`: inferred values SHOULD NOT be included.
+The event SHOULD only include values which were explicitly included by the author: inferred values SHOULD NOT be included.
 
 TripAdded objects are the same as TripUpdated, with the following changes, so that the new trip can be placed in the appropriate order within existing trips:
 
@@ -199,7 +191,7 @@ Note that the author may or may not match the editors in `changes`, since inspec
 
 Event type: `com.mbta.ctd.glides.editors_changed.v1`
 Fields in the event:
-- `author` (Author): the inspector who made the changes
+- `metadata` ([Metadata](#Metadata)): how the changes were entered in Glides, including the author.
 - `changes` (array of [EditorChange](#EditorChange)): a list of start and stop editing events
 
 ### Operator signed in
@@ -207,7 +199,7 @@ At the start of their shift, operators need to confirm that they are fit-for-dut
 
 Event type: `com.mbta.ctd.glides.operator_signed_in.v1`
 Fields in the event:
-- `author` (Author): the inspector who signed in the operator
+- `metadata` ([Metadata](#Metadata)): how the operator was signed in in Glides, including the inspector who signed them in.
 - `operator` (string): the badge number of the operator who signed in
 - `signedInAt` (RFC3999 timestamp): the time at which they signed in (separate from the `time` of the event)
 - `confirmation` (string): how the operator confirmed that they signed in. Current possibilities are `"type:<badge number>"` if they signed by typing in their badge number, or `"tap"` if they signed in by tapping their badge on an RFID reader, but future string formats may be added without warning, and consumers SHOULD NOT depend on any specific format.
@@ -219,8 +211,7 @@ Glides has new information about trips. Consumers who want to know what trains a
 
 Event type: `com.mbta.ctd.glides.trips_updated.v1`
 Fields in the event:
-- `author` (Author): the inspector who inputed the new information.
-- `inputType` (string): the action the inspector performed in Glides that caused the update. There are many ways to update trips in Glides, and all updated information normalized into the same format in `tripUpdates`. This field indicates what the inspector was doing in Glides, for consumers who care not just about service, but also care about how inspectors are using Glides. Example values are `"add-trip"` or `"manage-headways"`, but no guarantees are given about what strings will be used.
+- `metadata` ([Metadata](#Metadata)): how the updates were entered in Glides, including the inspector who made the change and the location of the trainsheet.
 - `tripUpdates` (array of ([TripUpdated](#TripUpdated)|[TripAdded](#TripAdded))): The list of one or more trips that have new information.
 
 # Reference-level explanation
@@ -265,7 +256,7 @@ Consumers MUST ignore event `type`s that they do not understand.
 Consumers MUST ignore fields in events (and in nested objects in events) which they do not understand, trusting that any additional fields are not required to process the event.
 
 ## Examples
-For all other examples after the first, `specversion`, `source`, `time`, and `id` fields are elided from the top level, and `author` is elided from `data`.
+For all other examples after the first, `specversion`, `source`, `time`, and `id` fields are elided from the top level, and some fields of `data.metadata` are elided.
 
 ### Starting Editing
 Inspector Alice (badge number: 123) starts her shift at Boston College. The previous inspector (badge number: 456) did not stop editing, so Alice clicks the "Take Over" button in Glides.
@@ -278,9 +269,12 @@ Inspector Alice (badge number: 123) starts her shift at Boston College. The prev
   "id": "19fdb184-7dd6-4664-8472-04bd6177ec44",
   "time": "2023-01-20T09:30:00-05:00",
   "data": {
-    "author": {
-      "emailAddress": "ainspector@example.com",
-      "badgeNumber": "123",
+    "metadata": {
+      "author": {
+        "emailAddress": "ainspector@example.com",
+        "badgeNumber": "123",
+      },
+      "inputType": "take-over-editing",
       "location": {"gtfsId": "place-lake"}
     },
     "changes": [
@@ -309,7 +303,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
 {
   "type": "com.mbta.ctd.glides.operator_signed_in.v1",
   "data": {
-    /* author elided */
+    "metadata": {},
     "operator": "789",
     "signedInAt": "2023-01-20T09:45:00-05:00",
     "confirmation": "tap"
@@ -328,8 +322,9 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
 {
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
-    /* author elided */
-    "inputType": "dropped-trip",
+    "metadata": {
+      "inputType": "dropped-trip",
+    },
     "tripUpdates": [
       {
         "type": "updated",
@@ -363,8 +358,9 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
 {
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
-    /* author elided */
-    "inputType": "manage-headways",
+    "metadata": {
+      "inputType": "manage-headways",
+    },
     "tripUpdates": [
       {
         "type": "updated",
@@ -420,7 +416,9 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
 {
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
-    "inputType": "dropped-trip",
+    "metadata": {
+      "inputType": "dropped-trip",
+    },
     "updatedTrips": [
       {
         "type": "updated",
@@ -452,8 +450,9 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
 {
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
-    /* author elided */
-    "inputType": "edit-trip",
+    "metadata": {
+      "inputType": "edit-trip",
+    },
     "updatedTrips": [
       {
         "type": "updated",
@@ -491,8 +490,9 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
 {
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
-    /* author elided */
-    "inputType": "add-trip",
+    "metadata": {
+      "inputType": "add-trip",
+    },
     "updatedTrips": [
       {
         "type": "added",
@@ -548,8 +548,9 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "time": "2023-01-23T01:25:00-05:00",
   "data": {
-    /* author elided */
-    "inputType": "edit-trip",
+    "metadata": {
+      "inputType": "edit-trip",
+    },
     "updatedTrips": [
       {
         "type": "updated",
