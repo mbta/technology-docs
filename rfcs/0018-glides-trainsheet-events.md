@@ -65,8 +65,7 @@ Currently the reason is entered by inspectors in a free-text field. It's publish
 Fields in the object:
 - `type` (string `"start"`|`"stop"`): Whether the editor started or stopped editing.
 - `location` ([Location](#Location)): the location the editor started or stopped managing.
-- `emailAddress` (string): the e-mail of the editor.
-- `badgeNumber` (string, optional): the badge number of the editor.
+- `editor` ([GlidesUser](#GlidesUser)): the affected editor.
 
 ### GlidesUser
 Fields:
@@ -289,14 +288,18 @@ Inspector Alice (badge number: 123) starts her shift at Boston College. The prev
       {
         "type": "stop",
         "location": {"gtfsId": "place-lake"},
-        "emailAddress": "binspector@example.com",
-        "badgeNumber": "456"
+        "editor": {
+          "emailAddress": "binspector@example.com",
+          "badgeNumber": "456"
+        }
       },
       {
         "type": "start",
         "location": {"gtfsId": "place-lake"},
-        "emailAddress": "ainspector@example.com",
-        "badgeNumber": "123"
+        "editor": {
+          "emailAddress": "ainspector@example.com",
+          "badgeNumber": "123"
+        }
       }
     ]
   }
