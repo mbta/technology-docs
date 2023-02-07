@@ -47,7 +47,7 @@ Multiple events can be included in a single Kinesis record, by wrapping them in 
 ### Car
 Fields:
 - `carNumber` (string | `"cleared"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
-- `operator` (string | `"cleared"`, optional): the badge number of the operator assigned to this car, or the string `"cleared"` if the inspector has unassigned the operator without reassigning another. If the field is absent, it is not modified.
+- `operator` ([Operator](#Operator) | `"cleared"`, optional): the operator assigned to this car, or the string `"cleared"` if the inspector has unassigned the operator without reassigning another. If the field is absent, it is not modified.
 
 An empty object `{}` is valid if nothing about the car has been modified.
 
@@ -86,6 +86,14 @@ Fields:
 - `inputType` (string, optional): the action that the user did in Glides. This field exists because the event data on its own may not specify how the data was entered, for example all trainsheet updates are normalized into a generic format in `tripUpdates`. Example values for this field are `"add-trip"` or `"manage-headways"`, but no guarantees are given about what strings will be used or which actions the field will be populated for.
 - `location` ([Location](#Location), optional): the location the logged-in user is managing.
 
+### Operator
+Operators will be described by their badge number:
+
+Fields
+- `badgeNumber` (string)
+
+It is represented as an object to provide future extensibility if needed.
+
 ### Scheduled
 Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never overriden by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
 
@@ -97,7 +105,7 @@ It does not include time and location fields, because for scheduled trips those 
 ### ScheduledCar
 Fields:
 - `run` (string, optional): The run number scheduled to the trip.
-- `operator` (string, optional): The badge number of the operator who is scheduled to operate the run that day, and therefore scheduled to do the trip.
+- `operator` ([Operator](#Operator), optional): The operator who is scheduled to operate the run that day, and therefore scheduled to do the trip.
 
 If fields are missing from ScheduledCar, it is not known who is scheduled to operate that car. An empty object is valid if we know the car is scheduled to operate but don't know anything else about it.
 
@@ -200,7 +208,7 @@ At the start of their shift, operators need to confirm that they are fit-for-dut
 Event type: `com.mbta.ctd.glides.operator_signed_in.v1`
 Fields in the event:
 - `metadata` ([Metadata](#Metadata)): how the operator was signed in in Glides, including the inspector who signed them in.
-- `operator` (string): the badge number of the operator who signed in
+- `operator` ([Operator](#Operator)): the operator who signed in
 - `signedInAt` (RFC3999 timestamp): the time at which they signed in (separate from the `time` of the event)
 - `confirmation` (string): how the operator confirmed that they signed in. Current possibilities are `"type:<badge number>"` if they signed by typing in their badge number, or `"tap"` if they signed in by tapping their badge on an RFID reader, but future string formats may be added without warning, and consumers SHOULD NOT depend on any specific format.
 
@@ -304,7 +312,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
   "type": "com.mbta.ctd.glides.operator_signed_in.v1",
   "data": {
     "metadata": {},
-    "operator": "789",
+    "operator": {"badgeNumber": "789"},
     "signedInAt": "2023-01-20T09:45:00-05:00",
     "confirmation": "tap"
   }
@@ -435,11 +443,11 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "cars": [
             {
               "run": "506",
-              "operator": "678",
+              "operator": {"badgeNumber": "678"},
             },
             {
               "run": "507",
-              "operator": "789",
+              "operator": {"badgeNumber": "789"},
             }
           ]
         }
@@ -467,7 +475,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
         "cars": [
           {
             "carNumber": "3800",
-            "operator": "456"
+            "operator": {"badgeNumber": "456"}
           }
           /* note that there is no second car, this is how the second car is removed */
         ],
@@ -475,11 +483,11 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "cars": [
             {
               "run": "504",
-              "operator": "456",
+              "operator": {"badgeNumber": "456"},
             },
             {
               "run": "505",
-              "operator": "567",
+              "operator": {"badgeNumber": "567"},
             }
           ]
         }
@@ -509,7 +517,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
         "cars": [
           {
             "carNumber": "3850",
-            "operator": "567"
+            "operator": {"badgeNumber": "567"}
           }
         ],
         "scheduled": null
@@ -528,7 +536,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
         "cars": [
           {
             "carNumber": "3850",
-            "operator": "567"
+            "operator": {"badgeNumber": "567"}
           }
         ],
         "scheduled": null
