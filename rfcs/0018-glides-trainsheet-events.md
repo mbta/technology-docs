@@ -49,7 +49,7 @@ Each event which is caused by a person will include an `author` key, indicating 
 
 - `emailAddress` (string): the e-mail of the logged-in user.
 - `badgeNumber` (string, optional): the badge number of the logged-in user.
-- `location` (Location, optional): the location the logged-in user is managing.
+- `location` ([Location](#Location), optional): the location the logged-in user is managing.
 ```json
 {
   "emailAddress": "name@example.com",
@@ -93,7 +93,7 @@ Currently the reason is entered by inspectors in a free-text field. It's publish
 ### EditorChange
 Fields in the object:
 - `type` (string `"start"`|`"stop"`): Whether the editor started or stopped editing.
-- `location` (Location): the location the editor started or stopped managing.
+- `location` ([Location](#Location)): the location the editor started or stopped managing.
 - `emailAddress` (string): the e-mail of the editor.
 - `badgeNumber` (string, optional): the badge number of the editor.
 
@@ -128,8 +128,8 @@ New fields:
 New restrictions on existing fields:
 - `type` (string): MUST be `"added"`.
 - `tripKey` (TripKey): will always be the added trip form, and never the scheduled trip form.
-- `startLocation` (Location, conditionally required): where the trip will be starting. Required if `startTime` is specified.
-- `endLocation` (Location, conditionally required): where the trip will be ending. Required if `endTime` is specified.
+- `startLocation` ([Location](#Location), conditionally required): where the trip will be starting. Required if `startTime` is specified.
+- `endLocation` ([Location](#Location), conditionally required): where the trip will be ending. Required if `endTime` is specified.
 - At least one of `startLocation` and `endLocation` is required.
 - If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
 - If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
@@ -150,10 +150,10 @@ In order to reduce event duplication, a Trip Key is used to identify both added 
 ```
 **Scheduled Trip**
 - `serviceDate` (RFC3999 date): the service date for the trip.
-- `startLocation` (Location): where the trip is scheduled to start.
-- `endLocation` (Location): where the trip is scheduled to end.
-- `startTime` (Time): when the trip is scheduled to depart `startLocation`.
-- `endTime` (Time): when the trip is scheduled to arrive at `endLocation`.
+- `startLocation` ([Location](#Location)): where the trip is scheduled to start.
+- `endLocation` ([Location](#Location)): where the trip is scheduled to end.
+- `startTime` ([Time](#Time)): when the trip is scheduled to depart `startLocation`.
+- `endTime` ([Time](#Time)): when the trip is scheduled to arrive at `endLocation`.
 
 ```json
 {
@@ -174,10 +174,10 @@ Fields in the object:
 - `type` (string): `"updated"|"added"`. Determines whether this is a `TripUpdated` object or a `TripAdded` object. If it's `"added"`, then it's a `TripAdded` object, see below. Subsequent updates to previously-added trips have `type` `"updated"`.
 - `tripKey` (Trip Key): which trip is being updated.
 - `comment` (string, optional): free text information about the trip.
-- `startLocation` (Location, optional): the new destination of the train.
-- `endLocation` (Location, optional): the new destination of the train.
-- `startTime` (Time, optional): if present, the new time that the train is expected to depart `startLocation` (or the existing `startLocation` of the trip).
-- `endTime` (Time, optional): if present, the new time that the train is expected to arrive at `endLocation` (or the existing `endLocation` of the trip).
+- `startLocation` ([Location](#Location), optional): the new destination of the train.
+- `endLocation` ([Location](#Location), optional): the new destination of the train.
+- `startTime` ([Time](#Time), optional): if present, the new time that the train is expected to depart `startLocation` (or the existing `startLocation` of the trip).
+- `endTime` ([Time](#Time), optional): if present, the new time that the train is expected to arrive at `endLocation` (or the existing `endLocation` of the trip).
 - `cars` (array of [Car](#Car), optional): array of length 1 or 2, containing the car numbers and operators for each car in the train assigned to the trip. If absent, there are no changes to any cars. If present, the length of the array is the length of the train. In a two car train, the front car is listed first.
 - `dropped` (boolean, optional): whether the trip has been dropped. If `false`, the trip is not dropped (and restored if previously dropped). Added trips can be dropped and restored just like scheduled trips.
 - `droppedReason` ([DroppedReason](#DroppedReason) | null, optional): The reason the trip was dropped. SHOULD only exist if the trip has been dropped. SHOULD be `null` if the trip was restored.
@@ -200,7 +200,7 @@ Note that the author may or may not match the editors in `changes`, since inspec
 Event type: `com.mbta.ctd.glides.editors_changed.v1`
 Fields in the event:
 - `author` (Author): the inspector who made the changes
-- `changes` (array of EditorChange): a list of start and stop editing events
+- `changes` (array of [EditorChange](#EditorChange)): a list of start and stop editing events
 
 ### Operator signed in
 At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They currently do this by physically signing a paper trainsheet: in the future, they will do this digitally.
