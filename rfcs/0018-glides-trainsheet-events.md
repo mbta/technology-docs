@@ -46,7 +46,7 @@ Multiple events can be included in a single Kinesis record, by wrapping them in 
 
 ### Car
 Fields:
-- `carNumber` (string | `"cleared"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
+- `label` (string | `"cleared"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
 - `operator` ([Operator](#Operator) | `"cleared"`, optional): the operator assigned to this car, or the string `"cleared"` if the inspector has unassigned the operator without reassigning another. If the field is absent, it is not modified.
 
 An empty object `{}` is valid if nothing about the car has been modified.
@@ -239,6 +239,9 @@ These inputs are similar to what RTR is already receiving from OCS.
 - Trip updated: `TSCH CON` (set consist), `TSCH DEL` (drop or restore a trip), `TSCH OFF` (change departure time)
 
 One key difference is that the trainsheets do not record the destination or route for trips, so added trips currently only include one end of the trip. RTR SHOULD assume a default pattern for these trips.
+
+## Idempotencey
+
 
 ## Short-term storage
 Events are only maintained in Kinesis for 24 hours. Some events (such as a [Trips updated][#trips-updated] which modifies the operators) can affect trips more than 24 hours in the future. Clients SHOULD maintain records internally of these future changes. Clients MUST NOT expect that reading the Kinesis stream from the trim horizon will return all events affecting the current service day. Clients MUST tolerate receiving updates for events that reference unseen past events (such as an update to an added trip that the client did not see get added, or a [`EditorsChanged`](#Editors-Changed) event that stops editing for an inspector the client did not see start editing).
@@ -485,7 +488,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
         "comment": "single",
         "cars": [
           {
-            "carNumber": "3800",
+            "label": "3800",
             "operator": {"badgeNumber": "456"}
           }
           /* note that there is no second car, this is how the second car is removed */
@@ -527,7 +530,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
         },
         "cars": [
           {
-            "carNumber": "3850",
+            "label": "3850",
             "operator": {"badgeNumber": "567"}
           }
         ],
@@ -546,7 +549,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
         },
         "cars": [
           {
-            "carNumber": "3850",
+            "label": "3850",
             "operator": {"badgeNumber": "567"}
           }
         ],
