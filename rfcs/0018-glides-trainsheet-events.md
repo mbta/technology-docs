@@ -74,14 +74,6 @@ An empty object `{}` is valid if nothing about the car has been modified.
 
 The length of `cars` always reflects the known length of the train.
 
-### Scheduled
-Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never overriden by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
-
-Fields:
-- `cars` (array of [ScheduledCar](#ScheduledCar)): Array of length 1 or 2. The length reflects the scheduled length of the train. In a 2 car train, the front car is listed first.
-
-It does not include time and location fields, because for scheduled trips those fields are already in [Trip Key](#Trip-Key)
-
 ### DroppedReason
 An object representing the reason that a trip was dropped.
 
@@ -101,6 +93,14 @@ Fields in the object:
 One of:
 - `{"gtfsId": "<GTFS stop ID>"}`, where the GTFS `location_type` is 1 (station).
 - `{"glidesId": "<other>"}`: Other unique identifier for non-revenue locations, internal to Glides.
+
+### Scheduled
+Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never overriden by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
+
+Fields:
+- `cars` (array of [ScheduledCar](#ScheduledCar)): Array of length 1 or 2. The length reflects the scheduled length of the train. In a 2 car train, the front car is listed first.
+
+It does not include time and location fields, because for scheduled trips those fields are already in [Trip Key](#Trip-Key)
 
 ### ScheduledCar
 Fields:
