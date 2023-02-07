@@ -65,14 +65,77 @@ or
 }
 ```
 
+### Car
+Fields:
+- `carNumber` (string | `"cleared"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
+- `operator` (string | `"cleared"`, optional): the badge number of the operator assigned to this car, or the string `"cleared"` if the inspector has unassigned the operator without reassigning another. If the field is absent, it is not modified.
+
+An empty object `{}` is valid if nothing about the car has been modified.
+
+The length of `cars` always reflects the known length of the train.
+
+### Scheduled
+Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never overriden by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
+
+Fields:
+- `cars` (array of [ScheduledCar](#ScheduledCar)): Array of length 1 or 2. The length reflects the scheduled length of the train. In a 2 car train, the front car is listed first.
+
+It does not include time and location fields, because for scheduled trips those fields are already in [Trip Key](#Trip-Key)
+
+### DroppedReason
+An object representing the reason that a trip was dropped.
+
+Fields:
+- `text` (string, required): free-text description about why a trip was dropped.
+
+Currently the reason is entered by inspectors in a free-text field. It's published in an object so that if Glides collects more structured data in the future, then extra fields can be added. If more fields are added, then a generated text description would be filled into the `text` field, and it would not be a breaking change.
+
+### EditorChange
+Fields in the object:
+- `type` (string `"start"`|`"stop"`): Whether the editor started or stopped editing.
+- `location` (Location): the location the editor started or stopped managing.
+- `emailAddress` (string): the e-mail of the editor.
+- `badgeNumber` (string, optional): the badge number of the editor.
+
 ### Location
 One of:
 - `{"gtfsId": "<GTFS stop ID>"}`, where the GTFS `location_type` is 1 (station).
 - `{"glidesId": "<other>"}`: Other unique identifier for non-revenue locations, internal to Glides.
 
+### ScheduledCar
+Fields:
+- `run` (string, optional): The run number scheduled to the trip.
+- `operator` (string, optional): The badge number of the operator who is scheduled to operate the run that day, and therefore scheduled to do the trip.
+
+If fields are missing from ScheduledCar, it is not known who is scheduled to operate that car. An empty object is valid if we know the car is scheduled to operate but don't know anything else about it.
+
 ### Time
 Time in the `HH:MM:SS` format. The time is measured from "noon minus 12h" of the service day (effectively midnight except for days on which daylight savings time changes occur). For times occurring after midnight, enter the time as a value greater than 24:00:00 in `HH:MM:SS` local time for the day on which the trip schedule begins.  Effectively, a [GTFS Time](https://github.com/google/transit/blob/master/gtfs/spec/en/reference.md#field-types) but without support for `H:MM:SS` times.
 > _Example: `04:30:00` for 4:30AM or `25:35:00` for 1:35AM on the next day._
+
+### TripAdded
+There is a new trip, that does not appear in the Glides' schedule data. Any added trips will appear exactly once a TripAdded object, and any future updates will appear as TripUpdated objects.
+"Added" is relative to the schedule that Glides uses, and an added trip may correspond to a trip that appears in a different schedule.
+
+The event SHOULD only include values which were explicitly included by the `author`: inferred values SHOULD NOT be included.
+
+TripAdded objects are the same as TripUpdated, with the following changes, so that the new trip can be placed in the appropriate order within existing trips:
+
+New fields:
+- `nextTripKey` (Trip Key, optional): links the newly created trip to the trip after it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `startLocation` is specified and `startTime` is NOT specified.
+- `previousTripKey` (Trip Key, optional): links the newly created trip to the trip immediately before it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `endLocation` is specified and `endTime` is NOT specified.
+
+New restrictions on existing fields:
+- `type` (string): MUST be `"added"`.
+- `tripKey` (TripKey): will always be the added trip form, and never the scheduled trip form.
+- `startLocation` (Location, conditionally required): where the trip will be starting. Required if `startTime` is specified.
+- `endLocation` (Location, conditionally required): where the trip will be ending. Required if `endTime` is specified.
+- At least one of `startLocation` and `endLocation` is required.
+- If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
+- If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
+- `dropped` SHOULD NOT be set.
+
+Glides SHOULD include the `cars` field to indicate the length of the train, even if no information is known about each car.
 
 ### Trip Key
 For scheduled trips, Glides does not have the same trip ID used by RTR. For added trips, while an ID is provided, it can be the case that an added trip from the Glides perspective is matched to a GTFS trip, in which case RTR will use the GTFS trip ID in publishing the information.
@@ -104,6 +167,27 @@ In order to reduce event duplication, a Trip Key is used to identify both added 
 *Notes*:
 - The added/scheduled distinction here is internal to Glides, and may not align with what is in other data sources. For example, an Added Trip in Glides may still correspond to a scheduled GTFS trip, and a Scheduled Trip may not appear in GTFS (due to track closures, for example).
 
+### TripUpdated
+This indicates that a trip was updated in some fashion:  consist, operators, departure time. The trip is either a scheduled trip, or an added trip that has already appeared in the events stream. Fields which are not present are not considered to be updated.
+
+Fields in the object:
+- `type` (string): `"updated"|"added"`. Determines whether this is a `TripUpdated` object or a `TripAdded` object. If it's `"added"`, then it's a `TripAdded` object, see below. Subsequent updates to previously-added trips have `type` `"updated"`.
+- `tripKey` (Trip Key): which trip is being updated.
+- `comment` (string, optional): free text information about the trip.
+- `startLocation` (Location, optional): the new destination of the train.
+- `endLocation` (Location, optional): the new destination of the train.
+- `startTime` (Time, optional): if present, the new time that the train is expected to depart `startLocation` (or the existing `startLocation` of the trip).
+- `endTime` (Time, optional): if present, the new time that the train is expected to arrive at `endLocation` (or the existing `endLocation` of the trip).
+- `cars` (array of [Car](#Car), optional): array of length 1 or 2, containing the car numbers and operators for each car in the train assigned to the trip. If absent, there are no changes to any cars. If present, the length of the array is the length of the train. In a two car train, the front car is listed first.
+- `dropped` (boolean, optional): whether the trip has been dropped. If `false`, the trip is not dropped (and restored if previously dropped). Added trips can be dropped and restored just like scheduled trips.
+- `droppedReason` ([DroppedReason](#DroppedReason) | null, optional): The reason the trip was dropped. SHOULD only exist if the trip has been dropped. SHOULD be `null` if the trip was restored.
+- `scheduled` ([Scheduled](#Scheduled) | null): For trips in Glides' schedule, this represents the scheduled data for the trip. It will always be present and won't change between subsequent updates to the same trip. For added trips, this will always be null.
+
+*Notes*
+- setting a new location or time does not modify the [Trip Key](#trip-key) for a scheduled trip.
+- if a trip is dropped, fields that are then irrelevant (such as `startTime` or `cars`) SHOULD NOT be set.
+- If `cars` is updated from a 1-element list to a 2-element list, any unset fields in the 2nd car should be considered `"cleared"`. This is relevant if a two-car train has a car removed and then re-added. The 2nd car does not retain the data it used to have (and doesn't fall through to the scheduled operator) unless that data is specifically included in the new object.
+
 ## Events
 
 ### Editors Changed
@@ -117,14 +201,6 @@ Event type: `com.mbta.ctd.glides.editors_changed.v1`
 Fields in the event:
 - `author` (Author): the inspector who made the changes
 - `changes` (array of EditorChange): a list of start and stop editing events
-
-#### EditorChange
-Fields in the object:
-- `type` (string `"start"`|`"stop"`): Whether the editor started or stopped editing.
-- `location` (Location): the location the editor started or stopped managing.
-- `emailAddress` (string): the e-mail of the editor.
-- `badgeNumber` (string, optional): the badge number of the editor.
-
 
 ### Operator signed in
 At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They currently do this by physically signing a paper trainsheet: in the future, they will do this digitally.
@@ -146,84 +222,6 @@ Fields in the event:
 - `author` (Author): the inspector who inputed the new information.
 - `inputType` (string): the action the inspector performed in Glides that caused the update. There are many ways to update trips in Glides, and all updated information normalized into the same format in `tripUpdates`. This field indicates what the inspector was doing in Glides, for consumers who care not just about service, but also care about how inspectors are using Glides. Example values are `"add-trip"` or `"manage-headways"`, but no guarantees are given about what strings will be used.
 - `tripUpdates` (array of ([TripUpdated](#TripUpdated)|[TripAdded](#TripAdded))): The list of one or more trips that have new information.
-
-#### TripUpdated
-This indicates that a trip was updated in some fashion:  consist, operators, departure time. The trip is either a scheduled trip, or an added trip that has already appeared in the events stream. Fields which are not present are not considered to be updated.
-
-Fields in the object:
-- `type` (string): `"updated"|"added"`. Determines whether this is a `TripUpdated` object or a `TripAdded` object. If it's `"added"`, then it's a `TripAdded` object, see below. Subsequent updates to previously-added trips have `type` `"updated"`.
-- `tripKey` (Trip Key): which trip is being updated.
-- `comment` (string, optional): free text information about the trip.
-- `startLocation` (Location, optional): the new destination of the train.
-- `endLocation` (Location, optional): the new destination of the train.
-- `startTime` (Time, optional): if present, the new time that the train is expected to depart `startLocation` (or the existing `startLocation` of the trip).
-- `endTime` (Time, optional): if present, the new time that the train is expected to arrive at `endLocation` (or the existing `endLocation` of the trip).
-- `cars` (array of [Car](#Car), optional): array of length 1 or 2, containing the car numbers and operators for each car in the train assigned to the trip. If absent, there are no changes to any cars. If present, the length of the array is the length of the train. In a two car train, the front car is listed first.
-- `dropped` (boolean, optional): whether the trip has been dropped. If `false`, the trip is not dropped (and restored if previously dropped). Added trips can be dropped and restored just like scheduled trips.
-- `droppedReason` ([DroppedReason](#DroppedReason) | null, optional): The reason the trip was dropped. SHOULD only exist if the trip has been dropped. SHOULD be `null` if the trip was restored.
-- `scheduled` ([Scheduled](#Scheduled) | null): For trips in Glides' schedule, this represents the scheduled data for the trip. It will always be present and won't change between subsequent updates to the same trip. For added trips, this will always be null.
-
-*Notes*
-- setting a new location or time does not modify the [Trip Key](#trip-key) for a scheduled trip.
-- if a trip is dropped, fields that are then irrelevant (such as `startTime` or `cars`) SHOULD NOT be set.
-- If `cars` is updated from a 1-element list to a 2-element list, any unset fields in the 2nd car should be considered `"cleared"`. This is relevant if a two-car train has a car removed and then re-added. The 2nd car does not retain the data it used to have (and doesn't fall through to the scheduled operator) unless that data is specifically included in the new object.
-
-
-#### TripAdded
-There is a new trip, that does not appear in the Glides' schedule data. Any added trips will appear exactly once a TripAdded object, and any future updates will appear as TripUpdated objects.
-"Added" is relative to the schedule that Glides uses, and an added trip may correspond to a trip that appears in a different schedule.
-
-The event SHOULD only include values which were explicitly included by the `author`: inferred values SHOULD NOT be included.
-
-TripAdded objects are the same as TripUpdated, with the following changes, so that the new trip can be placed in the appropriate order within existing trips:
-
-New fields:
-- `nextTripKey` (Trip Key, optional): links the newly created trip to the trip after it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `startLocation` is specified and `startTime` is NOT specified.
-- `previousTripKey` (Trip Key, optional): links the newly created trip to the trip immediately before it. If the Trip Key refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `endLocation` is specified and `endTime` is NOT specified.
-
-New restrictions on existing fields:
-- `type` (string): MUST be `"added"`.
-- `tripKey` (TripKey): will always be the added trip form, and never the scheduled trip form.
-- `startLocation` (Location, conditionally required): where the trip will be starting. Required if `startTime` is specified.
-- `endLocation` (Location, conditionally required): where the trip will be ending. Required if `endTime` is specified.
-- At least one of `startLocation` and `endLocation` is required.
-- If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
-- If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
-- `dropped` SHOULD NOT be set.
-
-Glides SHOULD include the `cars` field to indicate the length of the train, even if no information is known about each car.
-
-#### Car
-Fields:
-- `carNumber` (string | `"cleared"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
-- `operator` (string | `"cleared"`, optional): the badge number of the operator assigned to this car, or the string `"cleared"` if the inspector has unassigned the operator without reassigning another. If the field is absent, it is not modified.
-
-An empty object `{}` is valid if nothing about the car has been modified.
-
-The length of `cars` always reflects the known length of the train.
-
-#### Scheduled
-Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never overriden by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
-
-Fields:
-- `cars` (array of [ScheduledCar](#ScheduledCar)): Array of length 1 or 2. The length reflects the scheduled length of the train. In a 2 car train, the front car is listed first.
-
-It does not include time and location fields, because for scheduled trips those fields are already in [Trip Key](#Trip-Key)
-
-#### ScheduledCar
-Fields:
-- `run` (string, optional): The run number scheduled to the trip.
-- `operator` (string, optional): The badge number of the operator who is scheduled to operate the run that day, and therefore scheduled to do the trip.
-
-If fields are missing from ScheduledCar, it is not known who is scheduled to operate that car. An empty object is valid if we know the car is scheduled to operate but don't know anything else about it.
-
-#### DroppedReason
-An object representing the reason that a trip was dropped.
-
-Fields:
-- `text` (string, required): free-text description about why a trip was dropped.
-
-Currently the reason is entered by inspectors in a free-text field. It's published in an object so that if Glides collects more structured data in the future, then extra fields can be added. If more fields are added, then a generated text description would be filled into the `text` field, and it would not be a breaking change.
 
 # Reference-level explanation
 ## Effects on RTR
