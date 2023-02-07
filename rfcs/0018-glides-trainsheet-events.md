@@ -108,6 +108,20 @@ Fields:
 
 If fields are missing from ScheduledCar, it is not known who is scheduled to operate that car. An empty object is valid if we know the car is scheduled to operate but don't know anything else about it.
 
+### Signature
+Represents the operator's signature in Glides confirming that they were fit for duty.
+
+Fields
+- `type` (string): How the the operator made their signature.
+
+Current values for `type` are
+- `"tap"` if they signed in by tapping their badge to an RFID scanner.
+- `"type"` if they signed in by typing their badge number into Glides as a signature.
+
+Represented as an object so we could include other types of signatures or other data about the signature in the future without a breaking change.
+
+The tapped badge's RFID serial number is not included in the stream for security reasons (it could be used to impersonate an employee).
+
 ### Time
 Time in the `HH:MM:SS` format. The time is measured from "noon minus 12h" of the service day (effectively midnight except for days on which daylight savings time changes occur). For times occurring after midnight, enter the time as a value greater than 24:00:00 in `HH:MM:SS` local time for the day on which the trip schedule begins.  Effectively, a [GTFS Time](https://github.com/google/transit/blob/master/gtfs/spec/en/reference.md#field-types) but without support for `H:MM:SS` times.
 > _Example: `04:30:00` for 4:30AM or `25:35:00` for 1:35AM on the next day._
@@ -201,7 +215,7 @@ Fields in the event:
 - `metadata` ([Metadata](#Metadata)): how the changes were entered in Glides, including the author.
 - `changes` (array of [EditorChange](#EditorChange)): a list of start and stop editing events
 
-### Operator signed in
+### Operator Signed In
 At the start of their shift, operators need to confirm that they are fit-for-duty and do not have any electronic devices. They currently do this by physically signing a paper trainsheet: in the future, they will do this digitally.
 
 Event type: `com.mbta.ctd.glides.operator_signed_in.v1`
@@ -209,9 +223,7 @@ Fields in the event:
 - `metadata` ([Metadata](#Metadata)): how the operator was signed in in Glides, including the inspector who signed them in.
 - `operator` ([Operator](#Operator)): the operator who signed in
 - `signedInAt` (RFC3999 timestamp): the time at which they signed in (separate from the `time` of the event)
-- `confirmation` (string): how the operator confirmed that they signed in. Current possibilities are `"type:<badge number>"` if they signed by typing in their badge number, or `"tap"` if they signed in by tapping their badge on an RFID reader, but future string formats may be added without warning, and consumers SHOULD NOT depend on any specific format.
-
-The badge's RFID serial number is not included in the stream for security reasons.
+- `signature` ([Signature](#Signature)): how the operator confirmed that they signed in.
 
 ### Trips Updated
 Glides has new information about trips. Consumers who want to know what trains are running should pay attention to this event, and don't need to pay attention to any other events.
@@ -317,7 +329,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
     "metadata": {},
     "operator": {"badgeNumber": "789"},
     "signedInAt": "2023-01-20T09:45:00-05:00",
-    "confirmation": "tap"
+    "signature": {"type": "tap"}
   }
 }
 ```
