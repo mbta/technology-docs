@@ -54,12 +54,12 @@ An empty object `{}` is valid if nothing about the car has been modified.
 The length of `cars` always reflects the known length of the train.
 
 ### DroppedReason
-An object representing the reason that a trip was dropped.
+An object representing the reason that a trip was dropped. The presence of this object implies that the trip was dropped.
 
 Fields:
-- `text` (string, required): free-text description about why a trip was dropped.
+- `reason` (string, required): free-text description about why a trip was dropped.
 
-Currently the reason is entered by inspectors in a free-text field. It's published in an object so that if Glides collects more structured data in the future, then extra fields can be added. If more fields are added, then a generated text description would be filled into the `text` field, and it would not be a breaking change.
+Currently the reason is entered by inspectors in a free-text field. It's published in an object so that if Glides collects more structured data in the future, then extra fields can be added. If more fields are added, then a generated text description would be filled into the `reason` field, and it would not be a breaking change.
 
 ### EditorChange
 Fields in the object:
@@ -192,8 +192,7 @@ Fields in the object:
 - `startTime` ([Time](#Time), optional): if present, the new time that the train is expected to depart `startLocation` (or the existing `startLocation` of the trip).
 - `endTime` ([Time](#Time), optional): if present, the new time that the train is expected to arrive at `endLocation` (or the existing `endLocation` of the trip).
 - `cars` (array of [Car](#Car), optional): array of length 1 or 2, containing the car numbers and operators for each car in the train assigned to the trip. If absent, there are no changes to any cars. If present, the length of the array is the length of the train. In a two car train, the front car is listed first.
-- `dropped` (boolean, optional): whether the trip has been dropped. If `false`, the trip is not dropped (and restored if previously dropped). Added trips can be dropped and restored just like scheduled trips.
-- `droppedReason` ([DroppedReason](#DroppedReason) | null, optional): The reason the trip was dropped. SHOULD only exist if the trip has been dropped. SHOULD be `null` if the trip was restored.
+- `dropped` ([DroppedReason](#DroppedReason) | null, optional): If present the trip was dropped for the provided reason. If set to `null`, the trip is not dropped (and restored if previously dropped).
 - `scheduled` ([Scheduled](#Scheduled) | null): For trips in Glides' schedule, this represents the scheduled data for the trip. It will always be present and won't change between subsequent updates to the same trip. For added trips, this will always be null.
 
 *Notes*
@@ -358,8 +357,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "startTime": "10:05:00",
           "endTime": "10:52:00"
         },
-        "dropped": true,
-        "droppedReason": {"text": "staffing"},
+        "dropped": {"reason": "staffing"},
         "scheduled": {"cars": [{}]}
       },
       {
@@ -371,8 +369,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "startTime": "10:55:00",
           "endTime": "10:42:00"
         },
-        "dropped": true,
-        "droppedReason": {"text": "staffing"},
+        "dropped": {"reason": "staffing"},
         "scheduled": {"cars": [{}]}
       }
     ]
@@ -452,8 +449,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "startTime": "10:00:00",
           "endTime": "10:47:00"
         },
-        "dropped": true,
-        "droppedReason": {"text": "ran as single"},
+        "dropped": {"reason": "ran as single"},
         "scheduled": {
           "cars": [
             {
