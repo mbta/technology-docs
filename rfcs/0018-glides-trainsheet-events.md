@@ -113,7 +113,7 @@ In practice, we limit each location to have only one editor, and limit each edit
 
 Note that the author may or may not match the editors in `changes`, since inspectors can change whether other people are editing. For example, when an inspector takes over editing at a location, they may sign out the previous editor. Then they would issue a `stop` change for the previous editor and a `start` change for themself.
 
-Event type: `com.mbta.ctd.glides.editors-changed.v1`
+Event type: `com.mbta.ctd.glides.editors_changed.v1`
 Fields in the event:
 - `author` (Author): the inspector who made the changes
 - `changes` (array of EditorChange): a list of start and stop editing events
@@ -200,7 +200,7 @@ Fields:
 
 An empty object `{}` is valid if nothing about the car has been modified.
 
-The length of `cars`, always reflects the known length of the train.
+The length of `cars` always reflects the known length of the train.
 
 #### Scheduled
 Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never overriden by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
@@ -630,7 +630,7 @@ Advantages to separate Added and Updated events:
 Advantages to combining them:
 - Clients only need to listen to one event for all service updates.
 - Better represents how TripAdded can contain basically the same information that TripUpdated can.
-- The TripsUpdated event can contain a list of objects, instead of needing a separate Batched event to combine arbitrary events. (The Batched event is not otherwise needed, because the other operator-signed-in and editors-changed events never happen at the same time as trips-updated.)
+- The TripsUpdated event can contain a list of objects, instead of needing a separate Batched event to combine arbitrary events. (The Batched event is not otherwise needed, because the other operator_signed_in and editors_changed events never happen at the same time as trips_updated.)
 
 ## Alternative: Include snapshot of all data, not just changes
 In order to know everything about a trip, a client must be listening and remember all past changes. Glides could publish everything it knows about a trip so far, alongside updates or as an independent event.
