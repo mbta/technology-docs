@@ -82,6 +82,7 @@ Information about how the event was created by Glides. All important outputs fro
 
 Fields:
 - `author` ([GlidesUser](#GlidesUser), optional): The logged-in user whose action triggered the event.
+- `inputTimestamp` (RFC3999 timestamp, optional): The timestamp that the user entered the data into Glides, as reported by their device. This is different from the `time` field in the event, which is the server-reported time that the Glides server received the input. They could differ if sending the input was delayed do to network problems, or if the device's clock is wrong. Usually, you will want the event time instead, because Glides applies changes in the order they were received.
 - `inputType` (string, optional): the action that the user did in Glides. This field exists because the event data on its own may not specify how the data was entered, for example all trainsheet updates are normalized into a generic format in `tripUpdates`. Example values for this field are `"add-trip"` or `"manage-headways"`, but no guarantees are given about what strings will be used or which actions the field will be populated for.
 - `location` ([Location](#Location), optional): the location the logged-in user is managing.
 
@@ -295,6 +296,7 @@ Inspector Alice (badge number: 123) starts her shift at Boston College. The prev
         "emailAddress": "ainspector@example.com",
         "badgeNumber": "123",
       },
+      "inputTimestamp": "2023-01-20T09:29:59-05:00",
       "inputType": "take-over-editing",
       "location": {"gtfsId": "place-lake"}
     },
