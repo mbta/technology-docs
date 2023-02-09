@@ -184,7 +184,7 @@ In order to reduce event duplication, a TripKey is used to identify both added a
 This indicates that a trip was updated in some fashion:  consist, operators, departure time. The trip is either a scheduled trip, or an added trip that has already appeared in the events stream. Fields which are not present are not considered to be updated.
 
 Fields in the object:
-- `type` (string): `"updated"|"added"`. Determines whether this is a `TripUpdated` object or a `TripAdded` object. If it's `"added"`, then it's a `TripAdded` object, see below. Subsequent updates to previously-added trips have `type` `"updated"`.
+- `type` (string): `"updated"|"added"`. Determines whether this is a TripUpdated object or a  [TripAdded](#TripAdded) object. If it's `"added"`, then it's a [TripAdded](#TripAdded) object, see above. Subsequent updates to previously-added trips have `type` `"updated"`.
 - `tripKey` ([TripKey](#TripKey)): which trip is being updated.
 - `comment` (string, optional): free text information about the trip.
 - `startLocation` ([Location](#Location), optional): the new destination of the train.
