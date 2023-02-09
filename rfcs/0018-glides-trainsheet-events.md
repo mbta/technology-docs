@@ -100,7 +100,7 @@ It is represented as an object to provide future extensibility if needed.
 Scheduled information about the trip. It was not updated in Glides, but is included in the event stream so that consumers can know the schedule information that Glides uses. If data here was never overriden by a corresponding field in [TripUpdated](#TripUpdated), then consumers can assume that the trip operated based on the scheduled information contained here.
 
 Fields:
-- `cars` (array of [ScheduledCar](#ScheduledCar)): Array of length 1 or 2. The length reflects the scheduled length of the train. In a 2 car train, the front car is listed first.
+- `scheduledCars` (array of [ScheduledCar](#ScheduledCar)): Array of length 1 or 2. The length reflects the scheduled length of the train. In a 2 car train, the front car is listed first.
 
 It does not include time and location fields, because for scheduled trips those fields are already in [TripKey](#TripKey)
 
@@ -374,7 +374,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "endTime": "10:52:00"
         },
         "dropped": {"reason": "staffing"},
-        "scheduled": {"cars": [{}]}
+        "scheduled": {"scheduledCars": [{}]}
       },
       {
         "type": "updated",
@@ -386,7 +386,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "endTime": "10:42:00"
         },
         "dropped": {"reason": "staffing"},
-        "scheduled": {"cars": [{}]}
+        "scheduled": {"scheduledCars": [{}]}
       }
     ]
   }
@@ -408,7 +408,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "endTime": "10:42:00"
         },
         "startTime": "9:56:00",
-        "scheduled": {"cars": [{}]}
+        "scheduled": {"scheduledCars": [{}]}
       },
       {
         "type": "updated",
@@ -420,7 +420,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "endTime": "10:47:00"
         },
         "startTime": "10:02:00",
-        "scheduled": {"cars": [{}]}
+        "scheduled": {"scheduledCars": [{}]}
       },
       {
         "type": "updated",
@@ -432,7 +432,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "endTime": "10:57:00"
         },
         "startTime": "10:08:00",
-        "scheduled": {"cars": [{}]}
+        "scheduled": {"scheduledCars": [{}]}
       }
     ]
   }
@@ -467,7 +467,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
         },
         "dropped": {"reason": "ran as single"},
         "scheduled": {
-          "cars": [
+          "scheduledCars": [
             {
               "run": "506",
               "operator": {"badgeNumber": "678"},
@@ -507,7 +507,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           /* note that there is no second car, this is how the second car is removed */
         ],
         "scheduled": {
-          "cars": [
+          "scheduledCars": [
             {
               "run": "504",
               "operator": {"badgeNumber": "456"},
@@ -683,7 +683,7 @@ Because this is just a hypothetical benefit, and adding a snapshot in later woul
 ## Alternative: Split "cars" field into separate fields.
 Car numbers and operators are joined into a `cars` field with a list of objects. Previous versions of the RFC had them as separate fields, each with their own list.
 
-Similarly, there is a `scheduled.cars` list that joins scheduled runs and operators together.
+Similarly, there is a `scheduled.scheduledCars` list that joins scheduled runs and operators together.
 
 Disadvantages of separate lists:
 - Requires keeping the lists the same length.
