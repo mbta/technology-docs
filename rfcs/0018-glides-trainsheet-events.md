@@ -130,8 +130,9 @@ Time in the `HH:MM:SS` format. The time is measured from "noon minus 12h" of the
 > _Example: `04:30:00` for 4:30AM or `25:35:00` for 1:35AM on the next day._
 
 ### TripAdded
-There is a new trip, that does not appear in the Glides' schedule data. Any added trips will appear exactly once a TripAdded object, and any future updates will appear as TripUpdated objects.
-"Added" is relative to the schedule that Glides uses, and an added trip may correspond to a trip that appears in a different schedule.
+There is a new trip, that does not appear in the Glides' schedule data. "Added" is relative to the schedule that Glides uses, and an added trip may correspond to a trip that appears in a different schedule.
+
+Any added trips SHOULD appear exactly once a TripAdded object, and any future updates SHOULD appear as TripUpdated objects, (except in case of a duplicate event due to a network error, in which case the two events SHOULD have the same TripKey and data). Clients SHOULD ignore TripAdded events with a TripKey that has already been added.
 
 The event SHOULD only include values which were explicitly included by the author: inferred values SHOULD NOT be included.
 
@@ -248,6 +249,11 @@ One key difference is that the trainsheets do not record the destination or rout
 
 ## Idempotencey
 
+Glides SHOULD produce idempotent events. Consumers SHOULD assume events are idempotent.
+
+If an event is submitted to the stream twice, due to a network error, then the events SHOULD have the same event id, and clients MAY ignore duplicate events, however, they can safely replay events if they occur in short succession.
+
+If an [TripAdded](#TripAdded) object has the same [TripKey](#TripKey) as a previous TripAdded event, it SHOULD have the same data, and SHOULD be ignored. If two [OperatorSignedIn](#OperatorSignedIn) events have the same `operator` and `signedInAt`, then clients SHOULD assume they are the same signature, and the second SHOULD be ignored.
 
 ## Short-term storage
 Events are only maintained in Kinesis for 24 hours. Some events (such as a [Trips updated][#trips-updated] which modifies the operators) can affect trips more than 24 hours in the future. Clients SHOULD maintain records internally of these future changes. Clients MUST NOT expect that reading the Kinesis stream from the trim horizon will return all events affecting the current service day. Clients MUST tolerate receiving updates for events that reference unseen past events (such as an update to an added trip that the client did not see get added, or a [`EditorsChanged`](#Editors-Changed) event that stops editing for an inspector the client did not see start editing).
