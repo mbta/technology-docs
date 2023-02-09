@@ -46,8 +46,10 @@ Multiple events can be included in a single Kinesis record, by wrapping them in 
 
 ### Car
 Fields:
-- `label` (string | `"cleared"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"cleared"` if the inspector has unassigned the car. If the field is absent, it is not modified.
-- `operator` ([Operator](#Operator) | `"cleared"`, optional): the operator assigned to this car, or the string `"cleared"` if the inspector has unassigned the operator without reassigning another. If the field is absent, it is not modified.
+- `label` (string | `"none"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"none"` if the inspector has unassigned the car. If the field is absent, it is not modified.
+- `operator` ([Operator](#Operator) | `"none"` | `"unset"`, optional): the operator assigned to this car. The string `"none"` means the inspector has unassigned the operator without reassigning another. The string `"unset"` means to discard the previous value as if the field had never been modified. If the field is absent, it is not modified from its previous value.
+
+`"unset"` and `"none"` are semantically different, and used consistently with the `"unset"` values in [TripUpdated](#TripUpdated). If an operator is `"unset"`, then, as if no update had ever been made, clients can assume the scheduled operator will operate the car. If an operator is `"none"`, then we don't know who will operate the car.
 
 An empty object `{}` is valid if nothing about the car has been modified.
 
@@ -148,6 +150,7 @@ New restrictions on existing fields:
 - If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
 - If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
 - `dropped` SHOULD NOT be set.
+- All data SHOULD NOT be `"none"` or `"unset"`. (Instead, the fields would not be included).
 
 Glides SHOULD include the `cars` field to indicate the length of the train, even if no information is known about each car.
 
@@ -187,14 +190,16 @@ This indicates that a trip was updated in some fashion:  consist, operators, dep
 Fields in the object:
 - `type` (string): `"updated"|"added"`. Determines whether this is a TripUpdated object or a  [TripAdded](#TripAdded) object. If it's `"added"`, then it's a [TripAdded](#TripAdded) object, see above. Subsequent updates to previously-added trips have `type` `"updated"`.
 - `tripKey` ([TripKey](#TripKey)): which trip is being updated.
-- `comment` (string, optional): free text information about the trip.
-- `startLocation` ([Location](#Location), optional): the new destination of the train.
-- `endLocation` ([Location](#Location), optional): the new destination of the train.
-- `startTime` ([Time](#Time), optional): if present, the new time that the train is expected to depart `startLocation` (or the existing `startLocation` of the trip).
-- `endTime` ([Time](#Time), optional): if present, the new time that the train is expected to arrive at `endLocation` (or the existing `endLocation` of the trip).
+- `comment` (string, optional): free text information about the trip. Could potentially be the empty string, if a comment was deleted.
+- `startLocation` ([Location](#Location) | "unset", optional): the new destination of the train.
+- `endLocation` ([Location](#Location) | "unset", optional): the new destination of the train.
+- `startTime` ([Time](#Time) | "unset", optional): if present, the new time that the train is expected to depart `startLocation` (or the existing `startLocation` of the trip).
+- `endTime` ([Time](#Time) | "unset", optional): if present, the new time that the train is expected to arrive at `endLocation` (or the existing `endLocation` of the trip).
 - `cars` (array of [Car](#Car), optional): array of length 1 or 2, containing the car numbers and operators for each car in the train assigned to the trip. If absent, there are no changes to any cars. If present, the length of the array is the length of the train. In a two car train, the front car is listed first.
-- `dropped` ([DroppedReason](#DroppedReason) | null, optional): If present the trip was dropped for the provided reason. If set to `null`, the trip is not dropped (and restored if previously dropped).
-- `scheduled` ([Scheduled](#Scheduled) | null): For trips in Glides' schedule, this represents the scheduled data for the trip. It will always be present and won't change between subsequent updates to the same trip. For added trips, this will always be null.
+- `dropped` ([DroppedReason](#DroppedReason) | false, optional): If present the trip was dropped for the provided reason. If set to `false`, the trip is not dropped (and restored if previously dropped).
+- `scheduled` ([Scheduled](#Scheduled) | null): For trips in Glides' schedule, this represents the scheduled data for the trip. It will always be present and won't change between subsequent updates to the same trip. For added trips, this will always be `null`.
+
+Some values might be the special string `"unset"`. This means to treat the field as if it had never been modified. This is semantically slightly different than setting the value to the scheduled value. For example, setting `startTime` to `"unset"` implies we don't know when the trip will leave, and the scheduled time might be a good guess, but setting `startTime` to equal the scheduled start time implies that an inspector has confirmed the trip will leave at that time.
 
 *Notes*
 - setting a new location or time does not modify the [TripKey](#TripKey) for a scheduled trip.
