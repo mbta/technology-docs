@@ -341,7 +341,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
 - Due to staffing issues, the 10:05am trip is dropped, along with its return trip.
 - Using the "Manage Headways" feature, Alice changes the expected departure times of the remaining trips to 9:56am, 10:02am, and 10:08am.
 
-(Scheduled data is unrealistically abbreviated for this example. See the next example for realistic scheduled data.)
+(Scheduled data is unrealistically abbreviated for this example. Normally there would be information about scheduled operators. See the next example for realistic scheduled operator data.)
 
 ```json
 {
@@ -433,7 +433,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
 - In order to maintain headways, Inspector Alice will split the trainset
 - Operator A will take 3800 and run the 9:55am
 - Operator B will take 3850 and run the 10:00am
-- Alice does this by dropping the second trip and adding a new one-car trip (and also its return). In real life she would probably assign B to the 2nd trip, and all the trips would be round trips, but doing it this way provides an example of adding a trip.
+- Alice does this by dropping the second trip and adding a new one-car trip (and also its return). In real life she would probably assign B to the 2nd trip, and all the trips would be round trips. The example does it this way to provide an example of adding a trip and an example of how trips in the stream might not align to GTFS trips.
 
 ```json
 {
