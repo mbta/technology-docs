@@ -635,11 +635,11 @@ More events and more detailed events would have allowed more precise data to be 
 It was instead decided that all trip updates should result in the same generic `TripsUpdated` event, with a list of `TripUpdated` objects that don't reference the action the inspector took, or the location of the inspector.
 
 Reasons:
-- Clients only have to handle one event in order to get all updates that affect passenger service.
+- Clients only have to look at the data in one event in order to get all updates that affect passenger service.
 - The event (and clients) can focus on new information about service, instead of on what happened within Glides.
-- If Glides adds new ways for inspectors to enter data, it can produce the same event, instead of requiring backwards-incompatible new events.
+- If Glides adds new ways for inspectors to enter data, it can produce the same event with the same data format, instead of requiring backwards-incompatible new events.
 
-The `inputType` field on `TripsUpdated` was added as an escape hatch out of the abstraction, so that clients who want to can see the implementation detail of how the inspector created the update from Glides.
+The `inputType` field in [Metadata](#Metadata) was added as an escape hatch out of the abstraction, so that clients who want to can see the implementation detail of how the inspector created the update in Glides.
 
 ## Alternative: Separate trip-added event
 The current RFC has added trips as a modified case of a TripUpdated object in the "trips-updated" event. Previous versions of the RFC had a separate "trip-added" event.
@@ -649,7 +649,7 @@ Advantages to separate Added and Updated events:
 - Combining them creates more complicated cases and conditional requirements in the already-complicated TripsUpdated event.
 
 Advantages to combining them:
-- Clients only need to listen to one event for all service updates.
+- Clients only have to look at the data in one event in order to get all updates that affect passenger service.
 - Better represents how TripAdded can contain basically the same information that TripUpdated can.
 - The TripsUpdated event can contain a list of objects, instead of needing a separate Batched event to combine arbitrary events. (The Batched event is not otherwise needed, because the other operator_signed_in and editors_changed events never happen at the same time as trips_updated.)
 
