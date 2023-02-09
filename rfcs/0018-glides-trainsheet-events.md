@@ -204,8 +204,8 @@ Some values might be the special string `"unset"`. This means to treat the field
 
 *Notes*
 - setting a new location or time does not modify the [TripKey](#TripKey) for a scheduled trip.
-- if a trip is dropped, fields that are then irrelevant (such as `startTime` or `cars`) SHOULD NOT be set.
-- If `cars` is updated from a 1-element list to a 2-element list, any unset fields in the 2nd car should be considered `"cleared"`. This is relevant if a two-car train has a car removed and then re-added. The 2nd car does not retain the data it used to have (and doesn't fall through to the scheduled operator) unless that data is specifically included in the new object.
+- If `cars` is updated from a 1-element list to a 2-element list, then Glides SHOULD include data for the 2nd car. This is relevant if a two-car train has a car removed and then re-added. If a field was set before the car was dropped, then when the car is restored, clients MUST assume that the field is `"none"` as opposed to retaining its previous value, but Glides SHOULD include the data to avoid the ambiguity.
+- Some fields, such as `startTime` or `cars`, are not relevant to dropped trips. Those fields SHOULD NOT be set in an update that drops a trip or any following updates, until the trip is undropped by setting `dropped` to `false`. However, if a trip is undropped, clients MUST assume all fields retain their values from before the field was undropped. Clients MUST NOT ignore updates to fields when a trip is dropped, even if they aren't relevant for dropped trips. For example, if a trip is dropped, and then the `startTime` is updated, and then it's undropped, the trip's `startTime` is the value set while the trip was dropped. Glides MAY include extra fields in an update that undrops a trip, if they are changed as part of the same event that undropped the trip, or just to remind clients about them now that they're relevant.
 
 ## Events
 
