@@ -49,7 +49,7 @@ Fields:
 - `label` (string | `"none"`, optional): car number corresponding to the GTFS-RT `label` field. Or `"none"` if the inspector has unassigned the car. If the field is absent, it is not modified.
 - `operator` ([Operator](#Operator) | `"none"` | `"unset"`, optional): the operator assigned to this car. The string `"none"` means the inspector has unassigned the operator without reassigning another. The string `"unset"` means to discard the previous value as if the field had never been modified. If the field is absent, it is not modified from its previous value.
 
-`"unset"` and `"none"` are semantically different, and used consistently with the `"unset"` values in [TripUpdated](#TripUpdated). If an operator is `"unset"`, then, as if no update had ever been made, clients can assume the scheduled operator will operate the car. If an operator is `"none"`, then we don't know who will operate the car.
+`"unset"` and `"none"` are semantically different, and used consistently with the `"unset"` values in [TripUpdated](#TripUpdated). If an operator is `"unset"`, then, as if no update had ever been made, clients SHOULD assume the scheduled operator will operate the car. If an operator is `"none"`, then we don't know who will operate the car.
 
 An empty object `{}` is valid if nothing about the car has been modified.
 
