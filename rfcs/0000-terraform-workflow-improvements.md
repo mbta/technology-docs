@@ -226,7 +226,7 @@ To optimize the management of development and staging resources, the `dev` root 
 
 Once a new root module is set up for each engineering team, we'll need to:
 
-- Migrate each team's development and staging resources out of the `dev` module and into their new team-based module
+- Migrate each team's development and staging resources out of the `dev` module and into their new team-based module by using the `terraform state rm` and `terraform import` commands
 - Update references to dependent resources that remain in other modules to use data sources or [remote state](https://developer.hashicorp.com/terraform/language/state/remote-state-data)
 
 Note that production resources will remain in a single `prod` root module in the short term, but will likely eventually also be moved to team-based modules at a later date. This stepped approach will allow us to vet the changes proposed in this document, while also making sure we're adhering to the stricter security requirements for production that are discussed in the [Scalr workflow for production][scalr-workflow-production] section.
