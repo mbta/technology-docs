@@ -155,20 +155,19 @@ Nearly all of CTD's modules are currently stored in the devops repo and called u
 - Public module registries
 - Private module registries
 
-The main advantage of using a repo or module registry instead of a path is that the module can then be treated as a versioned artifact, and deployed separately from the configuration that references it. This makes it easier to add new functionality to a module without having to implement a feature gating mechanism (such as optional module variables, which is the typical approach currently). Versioning is potentially useful for both infrastructure component modules and application modules, as a way to make changes to a module without immediately impacting all the contexts in which it's used. Each call to the module could then be upgraded separately as needed.
+The main advantage of using a repo or module registry instead of a path is that the module can then be treated as a versioned artifact. If we are able to pin module calls to a specific version, we can make changes to the module without immediately impacting all the contexts in which it's called. This is useful for both infrastructure component modules, which are used across many different applications, and application modules, which are used to build multiple distinct environments. It also reduces the need to rely on feature gating mechanisms such as module variables, which is the typical approach to module changes currently.
 
-However, supporting module publishing is not without its caveats; in order to publish a module, it must:
+More importantly, versioning allows us to explicitly declare what version of an application module is running in the production context, and enforce a change control process to ensure that no unwanted or unintended changes are applied. Change control on production systems is a security requirement, which CTD typically handles via code reviews or deployment approvals. Without module versioning, changes to child modules could have immediate and undetectable impacts to production systems. By pinning modules in production, we can isolate changes to each running environment, and thus isolate the approval step for an extra layer of protection.
 
-- Have a process for publishing a git release/tag for each version
-- Follow a strict repo or directory naming convention: `terraform-<PROVIDER>-<NAME>`
+Introducing module versioning does add complexity to our Terraform workflow, but some of this complexity can be offset by publishing modules to a module registry. Terraform allows modules sourced from registries to be declared with [flexible version constraints](https://developer.hashicorp.com/terraform/language/expressions/version-constraints), and it's even possible to omit the version constraint entirely, allowing teams to preserve existing workflows in non-production contexts where change control is less of an issue. Private registries such as those offered by platforms like Scalr allow automatic publishing based on git tags, thus minimizing additional overhead.
 
-On top of that, in order to publish a module to Terraform's public registry, it must adhere to [a strict set of requirements][terraform-module-publishing], not least of which being that it must be stored in a discrete public repo. Private registries are less restrictive on these points, but are only available through paid platforms such as Scalr.
+In summary:
 
-Consider also that publishing modules is not strictly required in order to pin a module call to a specific version, since it's possible to use a git hash as a version string when calling a module from a repo. Still, there is merit to implementing a versioning and publishing workflow for infrastructure component modules, since they are used more broadly across different applications, and version strings are more comprehensible than git hashes.
+- We should set up a versioning workflow for all infrastructure component modules and application modules, and publish them to a registry to streamline how they're consumed by Terraform
+- To comply with change control requirements, production module calls should be updated to explicitly define the version of the module that they are running
+- Non-production module calls can retain the option of defining less strict version constraints or omitting them entirely
 
-In summary: We should prioritize setting up a versioning and publishing workflow for infrastructure component modules in either a public or private registry, but given the additional overhead, it should be considered an optional improvement for application modules.
-
-For details on the module versioning and publishing workflow, see the corresponding [reference-level explanation][reference-module-versioning].
+For more detail on module versioning and publishing, including the proposed workflow, see the corresponding [reference-level explanation][reference-module-versioning].
 
 ## 5. Terraform Automation
 [guide-automation]: #5-terraform-automation
@@ -338,18 +337,29 @@ As noted in the [guide-level explanation][guide-standardization], this is curren
 ## 4. Module Versioning/Publishing
 [reference-module-versioning]: #4-module-versioningpublishing
 
-As noted in the [guide-level explanation][guide-module-versioning], module versioning and publishing is something we will set up for all infrastructure component modules, but which should be considered optional for application modules. See also the [corresponding subsection under rationale and alternatives][alternatives-module-versioning].
+As noted in the [guide-level explanation][guide-module-versioning], module versioning and publishing is a necessary improvement that should be set up for all infrastructure component and application modules. To achieve this, we'll need to make some changes to how our modules are stored and structured. In particular, we'll need to rename module directories to adhere to Terraform's module naming convention of `terraform-<PROVIDER>-<NAME>`.
 
-### How To Publish A Module
+We'll also need to migrate all child modules to a separate monorepo, which we'll call `terraform_modules`. This will allow us to isolate the CI configuration, git tags, and commit history for modules. It will also help reinforce the separation between child modules and root modules, since it will no longer be possible to update both a child module and the infrastructure that uses it in the same pull request.
 
-To set up a module for versioning and publishing, we'll need to:
+For details on the alternative module publishing options that were explored, see the [corresponding subsection under rationale and alternatives][alternatives-module-versioning].
 
-- Move the module's configuration to a separate repo, for a few reasons:
-  - It simplifies the workflow for tagging/publishing releases
-  - It's required if publishing to the public Terraform registry
-- Ensure that the repo name follows the convention `terraform-aws-<module-name>`, which is a requirement for both [Terraform's public registry][terraform-module-publishing] and [Scalr's private registry][scalr-private-registry]
-- Set up a tagging/release workflow in GitHub Actions that publishes the module to Scalr's private module registry or the public Terraform registry (ideally as a reusable workflow)
-- Configure any references in root modules to call the module from the repo or registry instead of a relative path to the module
+### Migration Process
+
+The process to migrate our modules to a versioned and published workflow will be as follows:
+
+1. Create a separate `terraform_modules` repo for private modules
+1. Set up a versioning workflow in GitHub Actions that creates a semver tag when a module is updated
+1. Migrate each infrastructure component and application module to the new repo and rename it to match the required `terraform-aws-<module_name>` convention
+1. Add each module to the private module registry
+1. Update any references in root modules to refer to the module registry, requiring version constraints in production, but not in dev/staging
+
+### Public Vs. Private Registries
+
+There are two options for publishing modules: Using [Terraform's public registry](https://registry.terraform.io/), or using a private registry such as the one [offered by Scalr][scalr-private-registry].
+
+Publishing a module to Terraform's public registry comes with its own [strict set of requirements][terraform-module-publishing], not least of which being that it must be stored in a discrete public repo. Thankfully, private registries is less restrictive on these points, so publishing to a private registry is the preferred approach unless there's a reason to make a module public.
+
+If we do choose to publish a module in Terraform's public registry, the overall process will be similar, except that we'll need to make a separate repo for the module and make other changes in accordance with Terraform's requirements.
 
 ### Application Modules In Application Repos?
 
@@ -428,7 +438,7 @@ Each testing module will have a CLI-driven Scalr workspace with a remote operati
 
 Once a new version of the module is published, the module version can be updated in the development/staging and production contexts using the workflows described below.
 
-If module versioning is not employed, changes to the module will need to be applied immediately in any dependent root modules. In the development/staging context, this can be handled automatically by configuring [run triggers](https://docs.scalr.com/en/latest/workspaces.html#run-triggers) in the Scalr workspace. In the production context, however, there will be an extra layer of protection to ensure that changes don't impact production before they're ready to be applied there. This is described in more detail in the [production workflow section][scalr-workflow-production] below.
+If the module is not pinned in development/staging contexts, then the resulting changes will need to be applied immediately in any dependent root modules. This can be handled automatically by configuring [run triggers](https://docs.scalr.com/en/latest/workspaces.html#run-triggers) in the Scalr workspace. This won't apply in [the production context][scalr-workflow-production], where modules will always be pinned to a specific version in order to comply with change control requirements.
 
 #### Scalr Workflow for Applying Changes In Development/Staging Context
 [scalr-workflow-development-staging]: #scalr-workflow-for-applying-changes-in-developmentstaging-context
@@ -463,14 +473,16 @@ Each root module will have a GitHub-integrated Scalr workspace. Scalr will autom
 Production will mirror the development/staging context, with a few notable differences:
 
 1. In the short term, all resources will remain in the central `prod` module, which will be [renamed][root-module-naming-convention] to `aws-ctd-main-prod` and have its own GitHub-integrated Scalr workspace. Once the workflow has been vetted and security requirements are well understood, we can begin to move production resources into team-based modules.
-2. All calls to un-versioned modules will pinned to particular git hashes instead of relative paths, in order to protect the production context from changes that are made to un-versioned modules.
+2. All production module calls will be pinned to specific versions in order to enforce explicit approval of production changes.
 
 As before, Scalr will automatically run `terraform plan` when a pull request is opened, and attempt to automatically run `terraform apply` on merge.
 
-It is a security requirement to have an extra layer of protection on production systems, that any changes to those system require explicit approval. CTD typically handles this requirement during the code review stage. For Terraform changes, we can use the same approach, provided that sufficient protections are in place to guarantee that changes can't circumvent the code review process. Those protections will include:
+To facilitate change control on production modules, we will need to implement the following GitHub features on the `devops` repo:
 
-- [Branch protection rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches) for the default branch of the devops repo
-- [A `CODEOWNERS` file](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) listing the required reviewers for each CTD application's Terraform configuration file within the `aws-ctd-main-prod` (née `prod`) root module
+- [Branch protection rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches) for the default branch
+- [A `CODEOWNERS` file](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) listing the required reviewers for each CTD application's Terraform configuration file
+  - In the short term this means configuration within the `aws-ctd-main-prod` (née `prod`) root module
+  - In the long term this will mean the relevant files in team-based root modules that define production resources
 
 The code owners for each application can include engineering team leads, team members, and/or the Infrastructure team.
 
@@ -614,22 +626,23 @@ We could switch to using published modules exclusively, or at least prefer them 
 ## Alternatives to Module Versioning and Publishing
 [alternatives-module-versioning]: #alternatives-to-module-versioning-and-publishing
 
-The [Proposed approach][guide-module-versioning] aligns us to a [Terraform best practice][terraform-module-publishing], which is arguably beneficial even if we don't publish our modules publicly.
+The [Proposed approach][guide-module-versioning] aligns us to a [Terraform best practice][terraform-module-publishing] and improves the security of our production infrastructure by implementing explicit change control.
 
 ### Alternative 1: Do Nothing
 
 The no-build option would be to keep storing modules in the devops repo and calling them using relative paths. This is the current recommendation for application modules. The drawbacks to this approach are:
 
   - We must rely on feature flag variables to prevent new functionality from being applied immediately everywhere the module is used
+  - We can't prevent changes to modules from impacting production in unexpected or undesired ways
   - It doesn't scale well for modules that are used frequently
 
-### Alternative 2: Monorepo for Private Modules
+### Alternative 2: Infrastructure Component Modules Only
 
-Another alternative would be to move all modules that aren't destined to be published in Terraform's public registry into a separate monorepo. This method is supported by Scalr, provided that the folder naming convention matches the official convention of `terraform-aws-<module_name>`. One advantage is that it would be easier to manage the versioning and publishing workflow for private modules in one place. One potential disadvantage is that it could be confusing and awkward to have public modules in separate, individual repos and private modules in a separate monorepo. It would also require additional work to migrate all modules, for what is arguably limited benefit. For these reasons, we opted to recommend keeping un-versioned application modules in the devops repo and versioned modules in separate repos.
+The original recommendation of this RFC was to only version and publish infrastructure component modules, and leave application modules as-is. The rationale was that the overhead of a versioning workflow would be worthwhile for the more widely used infrastructure component modules, but not for application modules that are typically only used to manage a few different environments. However, in light of the requirement to pin module versions in production, this recommendation is no longer considered viable.
 
 ### Alternative 3: Use Git Hashes
 
-One other alternative that amounts to a compromise option is to keep modules un-versioned, but call them using a git hash instead of a relative path. This approach is easier to implement, since it doesn't require a tagging workflow for modules, yet still yields the benefits of versioning in that a module's configuration can be changed without immediately impacting all the contexts where it's used. The main disadvantage is that git hashes are harder to read than version strings, so it's not as clear what version of a particular module is in use. This option is being recommended as a [short-term solution for calling application modules in production][scalr-workflow-production], as a way to pin module calls without the hassle of a versioning/publishing workflow.
+One alternative that amounts to a compromise option is to keep modules un-versioned, but call them using a git hash instead of a relative path. This approach is easier to implement, since it doesn't require a tagging workflow for modules, yet still yields some benefit in that a module's configuration can be changed without immediately impacting all the contexts where it's used. The main disadvantage is that git hashes are harder to read than version strings, so it's not as clear what version of a particular module is in use. This option was previously recommended as a short-term solution for pinning application modules in production, but we ultimately decided that a full versioning workflow would be more easily understandable, and thus worth doing even if it's more complex to implement.
 
 ## Alternative Automation Solutions
 [alternatives-automation]: #alternative-automation-solutions
@@ -798,9 +811,10 @@ Other questions for the reader:
 - Is the proposed [root module naming convention][root-module-naming-convention] sensible and sufficiently comprehensive?
 - Does the [isolated module testing workflow][reference-module-testing] make sense? Does it seem easy enough to carry out?
 - How aggressive should we be about [standardizing on infrastructure component modules][guide-standardization] for ECS and RDS across all applications/teams?
-- How aggressive should we be about [versioning and publishing application modules][guide-module-versioning] for open-source applications?
-- If changes to non-versioned application modules can spill over into other modules, as noted in the [Scalr Workflow for Module Testing][scalr-workflow-module-testing], is that enough of a reason to push to version and publish all application modules?
-- Does the decision to [delay splitting the `prod` module and instead version all production module calls with a git hash][scalr-workflow-production] make sense?
+- ~~How aggressive should we be about [versioning and publishing application modules][guide-module-versioning] for open-source applications?~~ (Not very aggressive.)
+- ~~If changes to non-versioned application modules can spill over into other modules, as noted in the [Scalr Workflow for Module Testing][scalr-workflow-module-testing], is that enough of a reason to push to version and publish all application modules?~~ (Yes.)
+- ~~Does the decision to [delay splitting the `prod` module and instead version all production module calls with a git hash][scalr-workflow-production] make sense?~~ (No.)
+- Does the revised recommendation to [version and publish all application modules][guide-module-versioning] make sense?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
