@@ -349,6 +349,9 @@ The process to migrate our modules to a versioned and published workflow will be
 
 1. Create a separate `terraform_modules` repo for private modules
 1. Set up a versioning workflow in GitHub Actions that creates a semver tag when a module is updated
+   - Tags must be named in a manner that [Scalr's module registry supports](https://docs.scalr.io/docs/private-module-registry#sub-modules-mono-repo)
+   - The exact naming convention is to be determined, but will likely be something like `<module-name>/<version>`
+   - Ideally the tagging workflow will be automated and derive the module name and appropriate version string automatically (i.e. from semantic commits or PR tags)
 1. Migrate each infrastructure component and application module to the new repo and rename it to match the required `terraform-aws-<module_name>` convention
 1. Add each module to the private module registry
 1. Update any references in root modules to refer to the module registry, requiring version constraints in production, but not in dev/staging
