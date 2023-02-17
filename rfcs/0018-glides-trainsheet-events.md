@@ -305,10 +305,10 @@ Inspector Alice (badge number: 123) starts her shift at Boston College. The prev
     "metadata": {
       "author": {
         "emailAddress": "ainspector@example.com",
-        "badgeNumber": "123",
+        "badgeNumber": "123"
       },
       "inputTimestamp": "2023-01-20T09:29:59-05:00",
-      "inputType": "take-over-editing",
+      "inputType": "take-over-editing"
       "location": {"gtfsId": "place-lake"}
     },
     "changes": [
@@ -361,7 +361,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
     "metadata": {
-      "inputType": "dropped-trip",
+      "inputType": "dropped-trip"
     },
     "tripUpdates": [
       {
@@ -395,7 +395,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
     "metadata": {
-      "inputType": "manage-headways",
+      "inputType": "manage-headways"
     },
     "tripUpdates": [
       {
@@ -453,7 +453,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
     "metadata": {
-      "inputType": "dropped-trip",
+      "inputType": "dropped-trip"
     },
     "updatedTrips": [
       {
@@ -470,11 +470,11 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "scheduledCars": [
             {
               "run": "506",
-              "operator": {"badgeNumber": "678"},
+              "operator": {"badgeNumber": "678"}
             },
             {
               "run": "507",
-              "operator": {"badgeNumber": "789"},
+              "operator": {"badgeNumber": "789"}
             }
           ]
         }
@@ -486,7 +486,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
     "metadata": {
-      "inputType": "edit-trip",
+      "inputType": "edit-trip"
     },
     "updatedTrips": [
       {
@@ -510,11 +510,11 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
           "scheduledCars": [
             {
               "run": "504",
-              "operator": {"badgeNumber": "456"},
+              "operator": {"badgeNumber": "456"}
             },
             {
               "run": "505",
-              "operator": {"badgeNumber": "567"},
+              "operator": {"badgeNumber": "567"}
             }
           ]
         }
@@ -526,7 +526,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
   "type": "com.mbta.ctd.glides.trips_updated.v1",
   "data": {
     "metadata": {
-      "inputType": "add-trip",
+      "inputType": "add-trip"
     },
     "updatedTrips": [
       {
@@ -584,7 +584,7 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
   "time": "2023-01-23T01:25:00-05:00",
   "data": {
     "metadata": {
-      "inputType": "edit-trip",
+      "inputType": "edit-trip"
     },
     "updatedTrips": [
       {
