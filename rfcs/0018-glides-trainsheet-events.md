@@ -455,7 +455,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
     "metadata": {
       "inputType": "dropped-trip"
     },
-    "updatedTrips": [
+    "tripUpdates": [
       {
         "type": "updated",
         "tripKey": {
@@ -488,7 +488,7 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
     "metadata": {
       "inputType": "edit-trip"
     },
-    "updatedTrips": [
+    "tripUpdates": [
       {
         "type": "updated",
         "tripKey": {
@@ -528,18 +528,18 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
     "metadata": {
       "inputType": "add-trip"
     },
-    "updatedTrips": [
+    "tripUpdates": [
       {
         "type": "added",
         "tripKey": {
           "serviceDate": "2022-01-20",
-          "id": "ADDED-1"
+          "glidesId": "ADDED-1"
         },
         "startLocation": {"gtfsId": "place-lake"},
         "startTime": "10:00:00",
         "nextTripKey": {
           "serviceDate": "2022-01-20",
-          "id": "ADDED-2"
+          "glidesId": "ADDED-2"
         },
         "cars": [
           {
@@ -553,12 +553,12 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
         "type": "added",
         "tripKey": {
           "serviceDate": "2022-01-20",
-          "id": "ADDED-2"
+          "glidesId": "ADDED-2"
         },
         "endLocation": {"gtfsId": "place-lake"},
         "previousTripKey": {
           "serviceDate": "2022-01-20",
-          "id": "ADDED-1"
+          "glidesId": "ADDED-1"
         },
         "cars": [
           {
@@ -586,7 +586,7 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
     "metadata": {
       "inputType": "edit-trip"
     },
-    "updatedTrips": [
+    "tripUpdates": [
       {
         "type": "updated",
         "tripKey": {
@@ -597,7 +597,8 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
           "endTime": "25:38:00"
         },
         "location": {"gtfsId": "place-matt"},
-        "startTime": "25:45:00"
+        "startTime": "25:45:00",
+        "scheduled": {"scheduledCars": [{}]}
       }
     ]
   }
