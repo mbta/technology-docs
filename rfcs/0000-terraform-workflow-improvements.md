@@ -360,7 +360,7 @@ The process to migrate our modules to a versioned and published workflow will be
 
 There are two options for publishing modules: Using [Terraform's public registry](https://registry.terraform.io/), or using a private registry such as the one [offered by Scalr][scalr-private-registry].
 
-Publishing a module to Terraform's public registry comes with its own [strict set of requirements][terraform-module-publishing], not least of which being that it must be stored in a discrete public repo. Thankfully, private registries is less restrictive on these points, so publishing to a private registry is the preferred approach unless there's a reason to make a module public.
+Publishing a module to Terraform's public registry comes with its own [strict set of requirements][terraform-module-publishing], not least of which being that it must be stored in a discrete public repo. Thankfully, private registries are less restrictive on these points, so publishing to a private registry is the preferred approach unless there's a reason to make a module public.
 
 If we do choose to publish a module in Terraform's public registry, the overall process will be similar, except that we'll need to make a separate repo for the module and make other changes in accordance with Terraform's requirements.
 
