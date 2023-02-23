@@ -258,7 +258,7 @@ Root modules associated with the "CTD Production" AWS account that should be ren
 - `global` → `aws-ctd-main-base`
 - `dev` → multiple modules:
   - move application development/staging resources to team-based modules:
-    - `aws-ctd-main-team-dataplatform`
+    - `aws-ctd-main-team-dataplatform` (this module already exists as `dataplatform_dev`)
     - `aws-ctd-main-team-glides`
     - `aws-ctd-main-team-lamp`
     - `aws-ctd-main-team-pass-programs`
