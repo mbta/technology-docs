@@ -2,7 +2,7 @@
 - Start Date: 2022-10-24
 - RFC PR: [mbta/technology-docs#16](https://github.com/mbta/technology-docs/pull/16)
 - Asana task: [Terraform Workflow Improvements RFC](https://app.asana.com/0/1113179098808463/1202075979488110/f)
-- Status: Proposed
+- Status: Accepted
 
 # Summary
 [summary]: #summary
