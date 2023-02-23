@@ -84,7 +84,7 @@ Information about how the event was created by Glides. All important outputs fro
 
 Fields:
 - `author` ([GlidesUser](#GlidesUser), optional): The logged-in user whose action triggered the event.
-- `inputTimestamp` (RFC3999 timestamp, optional): The timestamp that the user entered the data into Glides, as reported by their device. This is different from the `time` field in the event, which is the server-reported time that the Glides server received the input. They could differ if sending the input was delayed do to network problems, or if the device's clock is wrong. Usually, you will want the event time instead, because Glides applies changes in the order they were received.
+- `inputTimestamp` (RFC3999 timestamp, optional): The timestamp that the user entered the data into Glides, as reported by their device. This is different from the `time` field in the event, which is the server-reported time that the Glides server received the input. They could differ if sending the input was delayed due to network problems, or if the device's clock is wrong. Usually, you will want the event time instead, because Glides applies changes in the order they were received.
 - `inputType` (string, optional): the action that the user did in Glides. This field exists because the event data on its own may not specify how the data was entered, for example all trainsheet updates are normalized into a generic format in `tripUpdates`. Example values for this field are `"add-trip"` or `"manage-headways"`, but no guarantees are given about what strings will be used or which actions the field will be populated for.
 - `location` ([Location](#Location), optional): the location the logged-in user is managing.
 
@@ -132,7 +132,7 @@ Time in the `HH:MM:SS` format. The time is measured from "noon minus 12h" of the
 ### TripAdded
 There is a new trip, that does not appear in the Glides' schedule data. "Added" is relative to the schedule that Glides uses, and an added trip may correspond to a trip that appears in a different schedule.
 
-Any added trips SHOULD appear exactly once a TripAdded object, and any future updates SHOULD appear as TripUpdated objects, (except in case of a duplicate event due to a network error, in which case the two events SHOULD have the same TripKey and data). Clients SHOULD ignore TripAdded events with a TripKey that has already been added.
+Any added trips SHOULD appear exactly once as a TripAdded object, and any future updates SHOULD appear as TripUpdated objects, (except in case of a duplicate event due to a network error, in which case the two events SHOULD have the same TripKey and data). Clients SHOULD ignore TripAdded events with a TripKey that has already been added.
 
 The event SHOULD only include values which were explicitly included by the author: inferred values SHOULD NOT be included.
 
@@ -247,7 +247,7 @@ These inputs are similar to what RTR is already receiving from OCS.
 
 One key difference is that the trainsheets do not record the destination or route for trips, so added trips currently only include one end of the trip. RTR SHOULD assume a default pattern for these trips.
 
-## Idempotencey
+## Idempotence
 
 Glides SHOULD produce idempotent events. Consumers SHOULD assume events are idempotent.
 
