@@ -81,6 +81,8 @@ To address the scaling issues and pain points called out in the [summary][summar
 
 The following subsections detail each improvement broadly. For specific implementation details, see the [reference-level explanation][reference-level-explanation] section below.
 
+Note that this explanation assumes familiarity with Terraform, its [file structure](https://developer.hashicorp.com/terraform/language/files), and the concept of [Terraform modules](https://developer.hashicorp.com/terraform/language/modules).
+
 ## 1. Smaller, More Focused Modules
 [guide-module-splitting]: #1-smaller-more-focused-modules
 
