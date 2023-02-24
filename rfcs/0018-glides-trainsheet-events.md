@@ -136,20 +136,18 @@ Any added trips SHOULD appear exactly once as a TripAdded object, and any future
 
 The event SHOULD only include values which were explicitly included by the author: inferred values SHOULD NOT be included.
 
-TripAdded objects are the same as TripUpdated, with the following changes, so that the new trip can be placed in the appropriate order within existing trips:
+TripAdded objects are the same as TripUpdated, with the following changes, so that enough is specified about the trip to know or infer where and when the trip will happen:
 
 New fields:
-- `nextTripKey` ([TripKey](#TripKey), optional): links the newly created trip to the trip after it. If the TripKey refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `startLocation` is specified and `startTime` is NOT specified.
-- `previousTripKey` ([TripKey](#TripKey), optional): links the newly created trip to the trip immediately before it. If the TripKey refers to an added trip, it may not have been seen in the event stream at the time of this event. Required if `endLocation` is specified and `endTime` is NOT specified.
+- `previousTripKey` ([TripKey](#TripKey), conditionally required): The added trip will happen immediately after the trip referred to by `previousTripKey`. Required if `startTime` and `endTime` are both not set. (If no time is specified, then the previous trip is necessary so the trip's time can be inferred.) This field MAY refer to a trip that has not been already seen in the event stream.
 
 New restrictions on existing fields:
 - `type` (string): MUST be `"added"`.
 - `tripKey` ([TripKey](#TripKey)): will always be the added trip form, and never the scheduled trip form.
-- `startLocation` ([Location](#Location), conditionally required): where the trip will be starting. Required if `startTime` is specified.
-- `endLocation` ([Location](#Location), conditionally required): where the trip will be ending. Required if `endTime` is specified.
+- `startLocation` ([Location](#Location), conditionally required): where the trip will start. Required if `startTime` is specified.
+- `endLocation` ([Location](#Location), conditionally required): where the trip will end. Required if `endTime` is specified.
 - At least one of `startLocation` and `endLocation` is required.
-- If `startLocation` is present, then at least one of `startTime` or `previousTripKey` is required.
-- If `endLocation` is present, then at least one of `endTime` or `nextTripKey` is required.
+- At least one of `startTime`, `endTime`, and `previousTripKey` is required.
 - `dropped` SHOULD NOT be set.
 - All data SHOULD NOT be `"none"` or `"unset"`. (Instead, the fields would not be included).
 
@@ -537,10 +535,6 @@ Operator Charlie (badge: 789) returns from his break and stops by Inspector Alic
         },
         "startLocation": {"gtfsId": "place-lake"},
         "startTime": "10:00:00",
-        "nextTripKey": {
-          "serviceDate": "2022-01-20",
-          "glidesId": "ADDED-2"
-        },
         "cars": [
           {
             "label": "3850",
