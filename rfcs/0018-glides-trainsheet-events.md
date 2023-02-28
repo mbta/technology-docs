@@ -59,9 +59,11 @@ The length of `cars` always reflects the known length of the train.
 An object representing the reason that a trip was dropped. The presence of this object implies that the trip was dropped.
 
 Fields:
-- `reason` (string, required): free-text description about why a trip was dropped.
+- `reason` (string): free-text description about why a trip was dropped.
 
 Currently the reason is entered by inspectors in a free-text field. It's published in an object so that if Glides collects more structured data in the future, then extra fields can be added. If more fields are added, then a generated text description would be filled into the `reason` field, and it would not be a breaking change.
+
+`reason` MAY be the empty string if for some reason Glides does not have information about why a trip was dropped.
 
 ### EditorChange
 Fields in the object:
