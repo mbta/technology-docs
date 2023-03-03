@@ -138,13 +138,13 @@ Any added trips SHOULD appear exactly once as a TripAdded object, and any future
 
 The event SHOULD only include values which were explicitly included by the author: inferred values SHOULD NOT be included.
 
-TripAdded objects are the same as TripUpdated, with the following changes, so that enough is specified about the trip to know or infer where and when the trip will happen:
+TripAdded objects are the same as [TripUpdated](#TripUpdated) with the following new restrictions, so that enough is specified about the trip to know or infer where and when the trip will happen. (This extension means all TripAdded objects also happen to be valid TripUpdated objects according to the spec below.)
 
 New fields:
 - `previousTripKey` ([TripKey](#TripKey), conditionally required): The added trip will happen immediately after the trip referred to by `previousTripKey`. Required if `startTime` and `endTime` are both not set. (If no time is specified, then the previous trip is necessary so the trip's time can be inferred.) This field MAY refer to a trip that has not been already seen in the event stream.
 
 New restrictions on existing fields:
-- `type` (string): MUST be `"added"`.
+- `type` (string): MUST be `"added"` (as opposed to `"updated"`).
 - `tripKey` ([TripKey](#TripKey)): will always be the added trip form, and never the scheduled trip form.
 - `startLocation` ([Location](#Location), conditionally required): where the trip will start. Required if `startTime` is specified.
 - `endLocation` ([Location](#Location), conditionally required): where the trip will end. Required if `endTime` is specified.
@@ -189,7 +189,7 @@ In order to reduce event duplication, a TripKey is used to identify both added a
 This indicates that a trip was updated in some fashion: consist, operators, departure time. The trip is either a scheduled trip, or an added trip that has already appeared in the events stream. Fields which are not present are not considered to be updated.
 
 Fields in the object:
-- `type` (string): `"updated"|"added"`. Determines whether this is a TripUpdated object or a [TripAdded](#TripAdded) object. If it's `"added"`, then it's a [TripAdded](#TripAdded) object, see above. Subsequent updates to previously-added trips have `type` `"updated"`.
+- `type` (string): `"updated"|"added"`. If this field is `"updated"`, the object is this TripUpdated object. If it's `"added"`, it's a [TripAdded](#TripAdded) object that extends TripUpdated and has all these fields but with additional meaning, fields, and restrictions, see above. Subsequent updates to previously-added trips have `type` `"updated"`.
 - `tripKey` ([TripKey](#TripKey)): which trip is being updated.
 - `comment` (string, optional): free text information about the trip. Could potentially be the empty string, if a comment was deleted.
 - `startLocation` ([Location](#Location) | "unset", optional): the new destination of the train.
