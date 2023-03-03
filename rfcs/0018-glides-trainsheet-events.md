@@ -34,11 +34,11 @@ The goal of this RFC is to provide an interface which represents all data curren
 All events will be in the [CloudEvents v1.0.2](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) format (or later), using the JSON encoding. The event types will be under the `com.mbta.ctd.glides` event namespace, use `snake_case`, and will be in the past-tense (i.e. `trip_added` rather than `add_trip`).
 
 ## Kinesis
-Events will be written as records to a Kinesis stream. Each Glides environment (`dev`, `dev-green`, and `prod`) will have a separate stream, named `ctd-glides-<environment>`. 
+Events will be written as records to a Kinesis stream. Each Glides environment (`dev`, `dev-green`, and `prod`) will have a separate stream, named `ctd-glides-<environment>`.
 
 The partition key will be a hash of the station at which the inspector is working and the inspector's identity, which ensures that multiple events from a single inspector are ordered correctly if the records are distributed across multiple shards.
 
-As the stream will include potential PII (operator badge information) it MUST be configured as encrypted-at-rest. 
+As the stream will include potential PII (operator badge information) it MUST be configured as encrypted-at-rest.
 
 Multiple events can be included in a single Kinesis record, by wrapping them in a JSON array. This is an optimization for improving write speeds: further steps in the Kinesis pipeline may break up or rearrange these arrays.
 
@@ -74,7 +74,7 @@ Fields in the object:
 ### GlidesUser
 Fields:
 - `emailAddress` (string): the e-mail of the user.
-- `badgeNumber` (string, optional): the badge number of the user. Not all Glides users  have a badge number (for example, CTD contractors).
+- `badgeNumber` (string, optional): the badge number of the user. Not all Glides users have a badge number (for example, CTD contractors).
 
 ### Location
 One of:
@@ -128,7 +128,7 @@ Represented as an object so we could include other types of signatures or other 
 The tapped badge's RFID serial number is not included in the stream for security reasons (it could be used to impersonate an employee).
 
 ### Time
-Time in the `HH:MM:SS` format. The time is measured from "noon minus 12h" of the service day (effectively midnight except for days on which daylight savings time changes occur). For times occurring after midnight, enter the time as a value greater than 24:00:00 in `HH:MM:SS` local time for the day on which the trip schedule begins.  Effectively, a [GTFS Time](https://github.com/google/transit/blob/master/gtfs/spec/en/reference.md#field-types) but without support for `H:MM:SS` times.
+Time in the `HH:MM:SS` format. The time is measured from "noon minus 12h" of the service day (effectively midnight except for days on which daylight savings time changes occur). For times occurring after midnight, enter the time as a value greater than 24:00:00 in `HH:MM:SS` local time for the day on which the trip schedule begins. Effectively, a [GTFS Time](https://github.com/google/transit/blob/master/gtfs/spec/en/reference.md#field-types) but without support for `H:MM:SS` times.
 > _Example: `04:30:00` for 4:30AM or `25:35:00` for 1:35AM on the next day._
 
 ### TripAdded
@@ -186,10 +186,10 @@ In order to reduce event duplication, a TripKey is used to identify both added a
 - The added/scheduled distinction here is internal to Glides, and may not align with what is in other data sources. For example, an Added Trip in Glides may still correspond to a scheduled GTFS trip, and a Scheduled Trip may not appear in GTFS (due to track closures, for example).
 
 ### TripUpdated
-This indicates that a trip was updated in some fashion:  consist, operators, departure time. The trip is either a scheduled trip, or an added trip that has already appeared in the events stream. Fields which are not present are not considered to be updated.
+This indicates that a trip was updated in some fashion: consist, operators, departure time. The trip is either a scheduled trip, or an added trip that has already appeared in the events stream. Fields which are not present are not considered to be updated.
 
 Fields in the object:
-- `type` (string): `"updated"|"added"`. Determines whether this is a TripUpdated object or a  [TripAdded](#TripAdded) object. If it's `"added"`, then it's a [TripAdded](#TripAdded) object, see above. Subsequent updates to previously-added trips have `type` `"updated"`.
+- `type` (string): `"updated"|"added"`. Determines whether this is a TripUpdated object or a [TripAdded](#TripAdded) object. If it's `"added"`, then it's a [TripAdded](#TripAdded) object, see above. Subsequent updates to previously-added trips have `type` `"updated"`.
 - `tripKey` ([TripKey](#TripKey)): which trip is being updated.
 - `comment` (string, optional): free text information about the trip. Could potentially be the empty string, if a comment was deleted.
 - `startLocation` ([Location](#Location) | "unset", optional): the new destination of the train.
@@ -605,7 +605,7 @@ Note that the date of the the event is 2023-01-23, but the service date is 2023-
 
 # Drawbacks
 - This requires Glides to include new functionality to write their events into a Kinesis stream. However, they already use `ex_aws` so this additional functionality should not be hard to add.
- 
+
 # Rationale and alternatives
 - RTR already consumes a Kinesis stream of CloudEvents from OCS, so it's a limited additional lift to consume a new Kinesis stream.
 - Kinesis only adds a limited (<1s) latency between when the event is generated and when it is available to consumers.
