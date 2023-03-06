@@ -79,7 +79,7 @@ Fields:
 ### Location
 One of:
 - `{"gtfsId": "<GTFS stop ID>"}`, where the GTFS `location_type` is 1 (station).
-- `{"glidesId": "<other>"}`: Other unique identifier for non-revenue locations, internal to Glides.
+- `{"odsId": "<ODS stop ID"}`: id corresponding to `ops_location_id` in the upcoming ODS data. The data is still undergoing development and the specific ids are not yet finalized.
 
 ### Metadata
 Information about how the event was created by Glides. All important outputs from Glides will be elsewhere in the event data, but data here might be useful for consumers who care about how inspectors are using Glides.
@@ -308,13 +308,13 @@ Inspector Alice (badge number: 123) starts her shift at Boston College. The prev
         "badgeNumber": "123"
       },
       "inputTimestamp": "2023-01-20T09:29:59-05:00",
-      "inputType": "take-over-editing"
-      "location": {"gtfsId": "place-lake"}
+      "inputType": "take-over-editing",
+      "location": {"odsId": "lakst"}
     },
     "changes": [
       {
         "type": "stop",
-        "location": {"gtfsId": "place-lake"},
+        "location": {"odsId": "lakst"},
         "editor": {
           "emailAddress": "binspector@example.com",
           "badgeNumber": "456"
@@ -322,7 +322,7 @@ Inspector Alice (badge number: 123) starts her shift at Boston College. The prev
       },
       {
         "type": "start",
-        "location": {"gtfsId": "place-lake"},
+        "location": {"odsId": "lakst"},
         "editor": {
           "emailAddress": "ainspector@example.com",
           "badgeNumber": "123"
@@ -592,7 +592,6 @@ In this instance, the inspector dropped the 10:00am trip, and created a new trip
           "startTime": "25:30:00",
           "endTime": "25:38:00"
         },
-        "location": {"gtfsId": "place-matt"},
         "startTime": "25:45:00",
         "scheduled": {"scheduledCars": [{}]}
       }
