@@ -1,7 +1,7 @@
 - Feature Name: `glides-trainsheet-events`
 - Start Date: 2023-01-20
 - RFC PR: [mbta/technology-docs#18](https://github.com/mbta/technology-docs/pull/18)
-- Status: Proposed
+- Status: Accepted
 
 # Summary
 Glides will provide high-level trainsheet information as JSON CloudEvents in a Kinesis stream.
