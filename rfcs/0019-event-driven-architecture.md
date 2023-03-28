@@ -109,7 +109,7 @@ Due to the vagaries of the network, events may be sent to the network multiple t
 
 As Kinesis only stores events for 24 hours by default, producers SHOULD record events into durable storage as well. [Kinesis Firehose](https://aws.amazon.com/kinesis/data-firehose/) is an AWS service which can perform this role, but is not the only approach.
 
-Data SHOULD be written to an S3 bucket, preferably into a folder within the Data Platform infrastructure, and SHOULD be encrypted-at-rest (MUST if the events contain PII or potential PII).
+Data can be written to an S3 bucket, preferably into a folder within the Data Platform infrastructure, and SHOULD be encrypted-at-rest (MUST if the events contain PII or potential PII). An alternative approach would be storing the events into an existing database, such as RDS, where the same encryption standards apply.
 
 ## Maintaining Application State
 
