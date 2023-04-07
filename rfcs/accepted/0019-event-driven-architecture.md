@@ -4,7 +4,7 @@
 - Start Date: 2023-03-21
 - RFC PR: [mbta/technology-docs#0019](https://github.com/mbta/technology-docs/pull/19)
 - Asana task: n/a
-- Status: Proposed
+- Status: Accepted
 
 # Summary
 
