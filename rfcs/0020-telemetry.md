@@ -8,37 +8,45 @@
 
 - Status: Proposed
 
-  
-
 # Summary
 
 TID engineers currently make extensive use of logging for a wide range of use cases, primarily from Elixir to Splunk. Both Elixir and Splunk have evolving approaches for working with metrics. Sending metrics (which are often stateful, as opposed to log entries, which are stateless) is an additional instrumentation strategy intended to enhance existing real-time insights and observability. This RFC proposes a standardized approach for TID applications to utilize telemetry.
 
 # Motivation
 
-We currently calculate metrics in Splunk by processing logs. This approach is not incorrect, however when the only reason we collect a long entry is to calculate a metric we can save both human and Splunk resources by using a telemetry approach. In theory, this approach uses less bandwidth and less storage and requires less effort to process in Splunk compared to log entries.
+We currently calculate metrics in Splunk by processing logs. This approach is not incorrect, however when the only reason we collect a long entry is to calculate a metric we can save both human and Splunk resources by using a telemetry approach. Because we pay for ingestion, using metrics decreases costs.
+
+Furthermore, metrics are stored as a timeseries meaning they use less storage and require less effort to process than do logs. This makes reporting and alerting speedier. In some cases, it might make possible alerts that previously were too slow to trigger.
 
 # Guide-level explanation
 
-This proposal is primarily concerned with capturing and transmitting both built-in and custom metrics. First, what is a metric? A metric is an aggregate value. For example, in a log entry, you might send a single HTTP request to Splunk. Later, you could count those requests and generate metric about requests per minute. It is also possible to use a telemetry approach where the count of requests gets incremented prior to getting transmitted to Splunk such that the metric doesn't require post-processing to become a count.
+This proposal is primarily concerned with capturing and transmitting both built-in and custom metrics.
 
-Phoenix, Ecto, and potentially other libraries have built-in metrics that can be transmitted as telemetry, providing more insight into the operations of our systems at a more granular level.
+First, what is a metric? A metric is an aggregate value.
 
-When there is a need for a custom metric, an engineer should learn about the available types of metrics and consider if the telemetry approach would be a good fit, as well as understand how to view and visualize metrics in Splunk.
+For example, let's say you want to know how many requests your application is serving per minute. Using logs, you would send a log to Splunk for every single request. You would then query logs and bin entries based on a timestamp. Lastly, you would count each log in the bin. You can do this in Splunk, but it is slow. This is because logs are stored as documents and are not optimized for this kind of data processing.
 
-Depending on the systems an engineer may have worked on previously, it is not uncommon to have used telemetry in the past, and some folks may be quite familiar with this approach.
+If you used metrics instead, your application would keep an internal count of the number of requests it was receiving. Every minute it would emit that single number (plus metadata) to Splunk along with the time information. Splunk stores this metric in a timeseries which is optimized for time-based querying.
+
+Phoenix, Ecto, Nebulex, and many other libraries events via [telemetry](https://hexdocs.pm/telemetry/readme.html) providing granular insight into the state of the application. They can be turned into metrics automatically via [Telemetry.Metrics](https://hexdocs.pm/telemetry_metrics/Telemetry.Metrics.html).
+
+Providing custom metrics is as simple as logging:
+```
+:telemetry.execute([:web, :request, :done], %{latency: latency}, %{request_path: path, status_code: status})
+```
+
+Once your application is emitting metrics, you need to report on them. Multiple reporter libraries exist such as [statsd](https://github.com/beam-telemetry/telemetry_metrics_statsd) or [CloudWatch](https://github.com/bmuller/telemetry_metrics_cloudwatch). You can also write your own as this [example reporter from dotcom](https://github.com/mbta/dotcom/blob/master/lib/cms/telemetry/reporter.ex).
+
+See more: [Logs vs Metrics](https://www.splunk.com/en_us/blog/learn/logs-vs-metrics.html)
+See More: [Introduction to Telemetry in Elixir](https://blog.miguelcoba.com/introduction-to-telemetry-in-elixir)
 
 # Reference-level explanation
 
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+There are really two phases to discuss: getting metrics out of our applications and getting those metrics into Splunk.
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+For getting metrics out of our Elixir applications, we want to use the [telemetry](https://hexdocs.pm/telemetry/readme.html) library along with [Telemetry.Metrics](https://hexdocs.pm/telemetry_metrics/Telemetry.Metrics.html) and the [telemetry_poller](https://hexdocs.pm/telemetry_poller/readme.html). The telemetry library standardizes a method for emitting events. The telemetry metrics library turns those events into metrics, and the telemetry poller gathers those metrics at defined intervals.
 
 # Drawbacks
 
