@@ -31,7 +31,7 @@ If you used metrics instead, your application would keep an internal count of th
 Phoenix, Ecto, Nebulex, and many other libraries events via [telemetry](https://hexdocs.pm/telemetry/readme.html) providing granular insight into the state of the application. They can be turned into metrics automatically via [Telemetry.Metrics](https://hexdocs.pm/telemetry_metrics/Telemetry.Metrics.html).
 
 Providing custom metrics is as simple as logging:
-```
+```elixir
 :telemetry.execute([:web, :request, :done], %{latency: latency}, %{request_path: path, status_code: status})
 ```
 
@@ -46,7 +46,11 @@ See More: [Introduction to Telemetry in Elixir](https://blog.miguelcoba.com/intr
 
 There are really two phases to discuss: getting metrics out of our applications and getting those metrics into Splunk.
 
-For getting metrics out of our Elixir applications, we want to use the [telemetry](https://hexdocs.pm/telemetry/readme.html) library along with [Telemetry.Metrics](https://hexdocs.pm/telemetry_metrics/Telemetry.Metrics.html) and the [telemetry_poller](https://hexdocs.pm/telemetry_poller/readme.html). The telemetry library standardizes a method for emitting events. The telemetry metrics library turns those events into metrics, and the telemetry poller gathers those metrics at defined intervals.
+### Getting metrics out of our applications
+
+For getting metrics out of our Elixir applications, we want to use the [telemetry](https://hexdocs.pm/telemetry/readme.html) library along with [Telemetry.Metrics](https://hexdocs.pm/telemetry_metrics/Telemetry.Metrics.html) and the [telemetry_poller](https://hexdocs.pm/telemetry_poller/readme.html). The telemetry library standardizes a method for emitting events. The telemetry metrics library turns those events into metrics, and the telemetry poller gathers those metrics and emits them to a reporter at defined intervals.
+
+### Getting metrics into Splunk
 
 # Drawbacks
 
