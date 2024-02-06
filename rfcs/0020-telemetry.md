@@ -38,6 +38,7 @@ Providing custom metrics is as simple as logging:
 Once your application is emitting metrics, you need to report on them. Multiple reporter libraries exist such as [statsd](https://github.com/beam-telemetry/telemetry_metrics_statsd) or [CloudWatch](https://github.com/bmuller/telemetry_metrics_cloudwatch). You can also write your own such as this [custom reporter from dotcom](https://github.com/mbta/dotcom/blob/master/lib/cms/telemetry/reporter.ex).
 
 See more: [Logs vs Metrics](https://www.splunk.com/en_us/blog/learn/logs-vs-metrics.html)
+
 See More: [Introduction to Telemetry in Elixir](https://blog.miguelcoba.com/introduction-to-telemetry-in-elixir)
 
 # Reference-level explanation
