@@ -71,6 +71,11 @@ We want to use the [telemetry](https://hexdocs.pm/telemetry/readme.html) library
 
 We recommend two options for getting metrics into Splunk, and teams should feel free to pursue the path that best fits their application and expertise.
 
+**Note**
+
+There is no reason you cannot combine the two methods.
+You could use the HEC for your Elixir applications and the UF for non-Elixir applications.
+
 ### Splunk Universal Forwarder
 
 The Splunk Universal Forwarder (UF) is an agent that runs alongside an application, takes in metrics in one of many formats, and forwards those metrics to Splunk.
@@ -78,7 +83,7 @@ The UF can be used with any application, regardless of language, which makes it 
 
 It runs in a [sidecar](https://www.oreilly.com/library/view/designing-distributed-systems/9781491983638/ch02.html) to any container that emits metrics.
 
-To use it, all you have to do is add it to the `container_definition_json` of your `aws-ecs-container-definition` module:
+To use it, create a metrics index in Splunk and add the sidecar to the `container_definition_json` of your `aws-ecs-container-definition` module:
 ```json
 container_definition_json = jsonencode([
     module.your-container.json_map_object,
@@ -88,19 +93,19 @@ container_definition_json = jsonencode([
 
 You use the StatsD telemetry reporter highlighted above to emit your metrics in the StatsD format, and the UF will automatically forward them.
 
-#### Why you should choose this method
+#### When you should choose this method
 
-The UF is a good choice if you maintain applications that aren't written in Elixir or want all of your applications to emit metrics in a standard format.
+- You maintain applications that aren't written in Elixir or want all of your applications to emit metrics in a standard format.
+
 Every language has a library that emits metrics in the StatsD format; they are straightforward to set up.
 You get a lot of flexibility with very little work by running the UF as a sidecar and using an intermediary standard like StatsD.
 
-#### Why you shouldn't choose this method
+#### When you shouldn't choose this method
 
-You only maintain Elixir applications.
+- You only need metrics from Elixir applications.
+- You are hesitant to change your infrastructure.
+- You are concerned about your ECS resource usage.
 
-You are hesitant to change your infrastructure.
-
-You are concerned about your ECS resource usage.
 The UF sidecar uses CPU and memory resources.
 Though the footprint is small, you might be worried that increasing your compute usage might affect the rest of your cluster.
 Resource usage is more pertinent if you run resource-lite instances, as the UF would take up a more significant percentage of CPU and memory.
@@ -108,20 +113,34 @@ Note that you can always increase CPU and memory levels for your cluster.
 
 ### Splunk HTTP Event Collector
 
-#### Why you should choose this method
+The Splunk HTTP Event Collector (HEC) allows us to submit metrics via HTTP.
+We maintain a library [TelemetryMetricsSplunk](https://github.com/anthonyshull/telemetry_metrics_splunk) that forwards telemetry metrics to Splunk via the HEC.
 
-#### Why you shouldn't choose this method
+To use it, create a metrics index in Splunk and add its HEC token to the library configuration.
 
-For this project, the HEC seems like the next best option. It will be the least work, but that is because it is the least flexible. We would have monitor metrics in Splunk, but we wouldn’t get any reuse. The metrics being emitted from the dotcom application still wouldn’t be picked up. To do that, we would have to write an Elixir library.
+```elixir
+config :app, TelemetryMetricsSplunk,
+  index: "your-index"
+  token: System.get_env("SPLUNK_TOKEN")
+```
 
-  - The monitor could easily just send JSON requests
-  - DOWNSIDE: no telemetry reporter seems to exist so we would have to write one for elixir apps
+#### When you should choose this method
+
+- You only need metrics from Elixir applications.
+
+#### When you shouldn't choose this method
+
+- You maintain non-Elixir applications and do not want to write a method of getting metrics into Splunk.
+
+There aren't any libraries in other languages that transmit metrics to Splunk via the HEC.
 
 # Drawbacks
 
 [drawbacks]: #drawbacks
 
-The argument could be made that we do not need metrics and that adding a means to collect them increases the complexity of 
+You can argue that we do not need metrics and that adding a means to collect them increases the complexity of our technology stack.
+However, we hope the limitations of a logs-only approach to observability have been made apparent by this RFC.
+Furthermore, we hope that the promised benefits of metrics cause excitement.
 
 # Rationale and alternatives
 
@@ -129,24 +148,29 @@ The argument could be made that we do not need metrics and that adding a means t
 
 ### AWS Cloudwatch
 
-#### Why you should choose this method
+We considered using AWS CloudWatch as an intermediary for metrics.
 
-#### Why you shouldn't choose this method
+#### Positives
 
-The AWS CloudWatch custom metrics would also be a good option for the larger organization. The biggest downside is that we would be paying both AWS and Splunk for every metric. If we shift focus from logs to metrics, this could be a non-trivial amount of money. The other downside is that it locks us into CloudWatch.
+Like the StatsD reporter and our HEC reporter, an AWS CloudWatch reporter already exists.
+It is possible to send metrics to CloudWatch and then ingest those into Splunk.
 
-  - There is a telemetry reporter for cloudwatch https://github.com/bmuller/telemetry_metrics_cloudwatch
-  - The monitor uses node and the AWS sdk supports CloudWatch metrics
-  - DOWNSIDE: we would be paying for metrics in CloudWatch and Splunk
-  - DOWNSIDE: ties us to CloudWatch
+To use it, teams must set up CloudWatch, set the correct permissions, and set the configuration in Splunk.
 
-# Unresolved questions
+See more: [Configure CloudWatch inputs for the Splunk Add-on for AWS](https://docs.splunk.com/Documentation/AddOns/released/AWS/CloudWatch).
 
-[unresolved-questions]: #unresolved-questions
+#### Negatives
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+AWS charges for every metric stored in CloudWatch.
+It also charges for every request for a metric.
+So, by using CloudWatch, we would be paying to store metrics in CloudWatch, paying to transfer them from CloudWatch to Splunk, and then paying Splunk to ingest them.
+
+As a paper napkin exercise, consider dotcom's monitor application.
+It emits 15 metrics every minute--21,600 every day.
+AWS charges one penny for every 1,000 metrics requested.
+Thus, it would cost $2.16 a day or $788.40 per year to transfer these 15 metrics from CloudWatch to Splunk.
+
+See more: [Example: Cost scenarios using polling APIs](https://docs.splunk.com/observability/en/infrastructure/monitor/aws-infra-costs.html#aws-costs-amazon).
 
 # Future possibilities
 
