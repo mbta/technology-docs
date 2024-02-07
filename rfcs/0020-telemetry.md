@@ -53,7 +53,7 @@ Providing custom metrics is as simple as logging:
 :telemetry.execute([:web, :request, :done], %{latency: latency}, %{request_path: path, status_code: status})
 ```
 
-Once your application is emitting metrics, you need to report on them. Multiple reporter libraries exist, e.g., [statsd](https://github.com/beam-telemetry/telemetry_metrics_statsd) or [CloudWatch](https://github.com/bmuller/telemetry_metrics_cloudwatch). You can also write your own, such as this [custom reporter from dotcom](https://github.com/mbta/dotcom/blob/master/lib/cms/telemetry/reporter.ex).
+Once your application collects metrics, you must emit them with a reporter. Multiple reporter libraries exist, e.g., [statsd](https://github.com/beam-telemetry/telemetry_metrics_statsd) or [CloudWatch](https://github.com/bmuller/telemetry_metrics_cloudwatch). You can also write your own, such as this [custom reporter from dotcom](https://github.com/mbta/dotcom/blob/master/lib/cms/telemetry/reporter.ex).
 
 See More: [Introduction to Telemetry in Elixir](https://blog.miguelcoba.com/introduction-to-telemetry-in-elixir).
 
