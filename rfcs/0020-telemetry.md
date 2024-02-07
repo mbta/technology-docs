@@ -84,7 +84,7 @@ The UF can be used with any application, regardless of language, which makes it 
 It runs in a [sidecar](https://www.oreilly.com/library/view/designing-distributed-systems/9781491983638/ch02.html) to any container that emits metrics.
 
 To use it, create a metrics index in Splunk and add the sidecar to the `container_definition_json` of your `aws-ecs-container-definition` module:
-```json
+```terraform
 container_definition_json = jsonencode([
     module.your-container.json_map_object,
     module.sidecar-container.json_map_object
