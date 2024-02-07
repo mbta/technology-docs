@@ -10,13 +10,29 @@
 
 # Summary
 
-TID engineers currently make extensive use of logging for a wide range of use cases, primarily from Elixir to Splunk. Both Elixir and Splunk have evolving approaches for working with metrics. Sending metrics (which are often stateful, as opposed to log entries, which are stateless) is an additional instrumentation strategy intended to enhance existing real-time insights and observability. This RFC proposes a standardized approach for TID applications to utilize telemetry.
+Observability is the ability to measure the internal states of a system by examining its outputs.<sup>[1](https://www.splunk.com/en_us/blog/learn/observability.html)</sup>
+It's what allows us to understand how our applications and systems are working.
+There are three pillars to observability:<sup>[2](https://www.crowdstrike.com/cybersecurity-101/observability/three-pillars-of-observability/)</sup>
+
+  1. **Logs** are the archival or historical records of system events and errors, which can be plain text, binary, or structured with metadata.
+  2. **Metrics** are numerical measurements of system performance and behavior, such as CPU usage, response time, or error rate.
+  3. **Traces** are the representations of individual requests or transactions that flow through a system, which can help identify bottlenecks, dependencies, and root causes of issues.
+
+TID engineers currently make extensive use of logging.
+But, we don't currently have an established mechanism for collecting metrics or traces.
+This RFC proposes multiple pathways for collecting metrics in our current observability platform Splunk.
 
 # Motivation
 
-We currently calculate metrics in Splunk by processing logs. This approach is not incorrect, however when the only reason we collect a long entry is to calculate a metric we can save both human and Splunk resources by using a telemetry approach. Because we pay for ingestion, using metrics decreases costs.
+Logs are incredibly useful for debugging and other unstructured research like a security audit.
+But, as noted above, they are just one of three tools used to observe systems.
 
-Furthermore, metrics are stored as a timeseries meaning they use less storage and require less effort to process than do logs. This makes reporting and alerting speedier. In some cases, it might make possible alerts that previously were too slow to trigger.
+> It might be tempting to think that logs can solve every use case. As the amount of data grows, however, a logs-only solution will become costly and relatively slow for a small set of regular searches, usually connected to alerts. This is because the process by which logs must be categorized and batched takes much more time and is much more computationally intensive than the metrics process...<sup>[3](https://www.splunk.com/en_us/blog/learn/logs-vs-metrics.html)</sup>
+
+Metrics are stored as a timeseries which means they are optimized for storage and retrieval as numbers in time.
+This is what makes them cheap to store and fast to retrieve.
+TID developers have already noted that many queries are incredibly slow if not impossible to run.
+By converting those observations to metrics, we can speed up said queries, and in many cases make alerts that were previously impossible possible.
 
 # Guide-level explanation
 
@@ -24,11 +40,11 @@ This proposal is primarily concerned with capturing and transmitting both built-
 
 What is a metric and how is it different from a log? Let's define a log as a structured **event** detailing information about a program's execution. A metric, on the other hand, is a single **number** useful for informing us about a program's execution. They are useful in different ways.
 
-For example, let's say you want to know how many requests your application is serving per minute. Using logs, you would send a log to Splunk for every single request. You would then query logs and bin entries based on a timestamp. Lastly, you would count each log in the bin. You can do this in Splunk, but it is slow. This is because logs are stored as documents and are not optimized for this kind of data processing.
+For example, let's say you want to know how many requests your application served per minute over the last hour. Using logs, you would send a log to Splunk for every single request. Dotcom regularly receives 150 requests per second or 9,000 requests per minute. So, if you wanted to look at the span of an hour, you would query 540,000 logs and bin each log by its timestamp. Lastly, you would count each log in each bin. You can do this in Splunk, but it is slow. And, it gets slower and slower as you increase the time horizon or amount of data. This is because logs are stored as documents optimized to be searched rather than calculated upon.
 
-If you used metrics instead, your application would keep an internal count of the number of requests it was receiving. Every minute it would emit that single number (plus identifying metadata) to Splunk along with the time information. Splunk stores this metric in a timeseries which is optimized for time-based querying.
+If you used metrics instead, your application would keep an internal count of the number of requests it was receiving. Every minute (this is tuneable per application) it would emit that number to Splunk along with a timestamp and reset itself. So, in a minute, it would emit the number 150 once. That is 1 request instead of the 9,000 above. Reviewing an hour of data would entail nothing more than looking at 60 numbers. This is clearly much faster than querying, sorting, and counting.
 
-In order to standardize reporting, Phoenix, Ecto, Nebulex, and many other libraries use the [telemetry](https://hexdocs.pm/telemetry/readme.html) library to emit events. They can be turned into metrics automatically via [Telemetry.Metrics](https://hexdocs.pm/telemetry_metrics/Telemetry.Metrics.html).
+Elixir libraries such as Phoenix, Ecto, Nebulex, and many others have adopted the [telemetry](https://hexdocs.pm/telemetry/readme.html) library as a standardized way to give users observability into their performance. It emits events which can be turned into metrics automatically via [Telemetry.Metrics](https://hexdocs.pm/telemetry_metrics/Telemetry.Metrics.html).
 
 Providing custom metrics is as simple as logging:
 ```elixir
@@ -37,9 +53,7 @@ Providing custom metrics is as simple as logging:
 
 Once your application is emitting metrics, you need to report on them. Multiple reporter libraries exist such as [statsd](https://github.com/beam-telemetry/telemetry_metrics_statsd) or [CloudWatch](https://github.com/bmuller/telemetry_metrics_cloudwatch). You can also write your own such as this [custom reporter from dotcom](https://github.com/mbta/dotcom/blob/master/lib/cms/telemetry/reporter.ex).
 
-See more: [Logs vs Metrics](https://www.splunk.com/en_us/blog/learn/logs-vs-metrics.html)
-
-See More: [Introduction to Telemetry in Elixir](https://blog.miguelcoba.com/introduction-to-telemetry-in-elixir)
+See More: [Introduction to Telemetry in Elixir](https://blog.miguelcoba.com/introduction-to-telemetry-in-elixir).
 
 # Reference-level explanation
 
@@ -49,11 +63,13 @@ There are really two phases to discuss: getting metrics out of our applications 
 
 ### Getting metrics out of our applications
 
-For getting metrics out of our Elixir applications, we want to use the [telemetry](https://hexdocs.pm/telemetry/readme.html) library along with [Telemetry.Metrics](https://hexdocs.pm/telemetry_metrics/Telemetry.Metrics.html) and the [telemetry_poller](https://hexdocs.pm/telemetry_poller/readme.html). The telemetry library standardizes a method for emitting events. The telemetry metrics library turns those events into metrics, and the telemetry poller gathers those metrics and emits them to a reporter at defined intervals.
+For getting metrics out of our Elixir applications, we want to use the [telemetry](https://hexdocs.pm/telemetry/readme.html) library along with [Telemetry.Metrics](https://hexdocs.pm/telemetry_metrics/Telemetry.Metrics.html) to convert them to metrics and the [telemetry_poller](https://hexdocs.pm/telemetry_poller/readme.html). The telemetry library standardizes a method for emitting events. The telemetry metrics library turns those events into metrics, and the telemetry poller gathers those metrics and emits them to a reporter at whatever intervals you define. You can see an [example implementation from dotcom](https://github.com/mbta/dotcom/blob/master/lib/cms/telemetry.ex).
 
 ### Getting metrics into Splunk
 
-**WIP**
+There are three ways to get metrics into Splunk, and teams should feel free to pursue the path that best fits their application and expertise.
+
+#### Splunk Universal Forwarder
 
 The UF route takes the most work upfront. But, it is the most flexible. Any service can emit statsd and it will make its way to Splunk. If we decide to move off of Splunk, we just need to find a provider that supports statsd. Furthermore, the statsd layer gives us a way to observe metrics while developing locally.
 
@@ -66,10 +82,14 @@ The UF route takes the most work upfront. But, it is the most flexible. Any serv
   - DOWNSIDE: the UF is finicky so we would have to figure out how to configure it in a container
   - DOWNSIDE: would entail making infra changes
 
+### Splunk HTTP Event Collector
+
 For this project, the HEC seems like the next best option. It will be the least work, but that is because it is the least flexible. We would have monitor metrics in Splunk, but we wouldn’t get any reuse. The metrics being emitted from the dotcom application still wouldn’t be picked up. To do that, we would have to write an Elixir library.
 
   - The monitor could easily just send JSON requests
   - DOWNSIDE: no telemetry reporter seems to exist so we would have to write one for elixir apps
+
+### AWS Cloudwatch
 
 The AWS CloudWatch custom metrics would also be a good option for the larger organization. The biggest downside is that we would be paying both AWS and Splunk for every metric. If we shift focus from logs to metrics, this could be a non-trivial amount of money. The other downside is that it locks us into CloudWatch.
 
