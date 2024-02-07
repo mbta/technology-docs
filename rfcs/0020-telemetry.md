@@ -170,6 +170,12 @@ It emits 15 metrics every minute--21,600 every day.
 AWS charges one penny for every 1,000 metrics requested.
 Thus, it would cost $2.16 a day or $788.40 per year to transfer these 15 metrics from CloudWatch to Splunk.
 
+Another negative is that using CloudWatch in this way might lock us into its use.
+Moving away from it would entail changing every codebase.
+
+A last negative is that using CloudWatch introduces a time delay as Splunk polls CloudWatch on an interval.
+The fact that the default is 5 minutes indicates the two aren't indended to be used for alerting.
+
 See more: [Example: Cost scenarios using polling APIs](https://docs.splunk.com/observability/en/infrastructure/monitor/aws-infra-costs.html#aws-costs-amazon).
 
 # Future possibilities
