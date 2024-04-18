@@ -35,7 +35,12 @@ Currently, the Glides app has an admin UI with a way to run a few hand-written q
  
 When [I asked other teams](https://app.asana.com/0/1200506724882024/1206647196651141/f), the recommended approach was to build a system like T-Alerts, where they still have to deploy code with a hardcoded approved query, but have a better system set up to reduce the effort and overhead in writing new queries. Glides was planning on doing this approach until we learned of Kviklet.
 
-Other options were considered and rejected in the asana task linked above.
+Other options that were considered and rejected in the asana task linked above:
+- An endpoint in the app to run arbitrary queries without a deploy: Vulnerable to SQL injections / huge security hole.
+- Direct prod access (with a read-only postgres user): Can't control PII access.
+- Read replica: Complexity and cost to maintaining a second DB.
+- DMS database dumps: Have had trouble scrubbing PII from them.
+- Lambda to read from the DB: Similar effort to doing it through approved app queries, it just trades overhead of deploying the app to overhead of managing the lambda.
 
 ## What is Kviklet
 
