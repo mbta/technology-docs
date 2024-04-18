@@ -76,11 +76,14 @@ Kviklet runs as a docker container that we deploy on our own AWS infrastructure.
 
 Unfortunately, Kviklet doesn't support IAM auth. To connect to the application databases, in order to avoid giving Kviklet write access, each database would need a new postgres user with only read permissions for Kviklet to use.
 
-The initial set up would have to be done by the infrastructure team, because it involves setting up infrastructure and postgres users that the Glides team can't do on its own.
+The initial set up can be mostly done by the Glides team opening Terraform PRs. However, the infrastructure team will be needed to:
+- Review and advise on the terraform configuration.
+- Execute `terraform apply`.
+- Create a new Postgres user.
 
 Glides would be the first application to use it. Assuming it goes well, other apps could then also connect their apps to Kviklet, as they have a need for it. 
 
-Ongoing mainteance tasks (which would mostly fall on the infrastructure team) would include:
+Once other teams want to get set up, ongoing mainteance tasks would mostly become the infrastructure team's responsibility, and would include:
 - Deploying new versions as they come out (it's under active development).
 - User management, as teams change.
 - Connecting new app databases, if more teams decide to begin using Kviklet for DB access.
