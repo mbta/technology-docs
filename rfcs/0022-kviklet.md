@@ -27,6 +27,8 @@ This is not just a problem for Glides. Any app with a database is likely to run 
 
 This has been a problem for us for a long time, which we haven't found a good solution for yet.
 
+Kviklet wrote a blog post about why it's good for developers to have (careful) prod access: [Should Developers have production access?](https://kviklet.dev/blog/should-engineers-have-production-access)
+
 ## Status Quo / Alternative
 
 The prod database can only be accessed by the application, so in order to run a query, the Glides team must deploy a code change to the server. This is pretty high overhead that must be paid even for a small one-off query that takes 30 seconds to plan and run locally.
