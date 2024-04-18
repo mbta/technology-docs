@@ -64,6 +64,7 @@ We would only give Kviklet read access to our databases, not write or admin acce
 - The effort of setting it up, maintaining the infrastructure for it, and using the app (managing permissions, etc).
   - The infrastructure team is already overburdened, and this would add to their workload in the short term.
 - It would be a centralized place with access to multiple of our databases, which is a security risk.
+- It doesn't support IAM auth to the database, so would require managing a Postgres user and password, which is more work and less secure.
 - Less customizable than writing custom code and UI to run queries.
 - It's a relatively new and unproven application, run by only 2 people. (It was going to be a business but [they decided to open source it instead](https://kviklet.dev/blog/kviklet-is-now-mit-licensed).)
 
