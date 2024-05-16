@@ -3,7 +3,7 @@
 The RFC process here is inspired by [that of the Rust programming
 language](https://github.com/rust-lang/rfcs).
 
-The process is intended to provide CTD team members a venue in which to propose substantial
+The process is intended to provide TID team members a venue in which to propose substantial
 technical changes and refactors to this application. The RFC will be reviewed and merged as either
 accepted, meaning we commit to working on it at some point in the future, or rejected. The RFCs will
 remain in the repository and be a source of historical information for anyone looking back for
@@ -29,7 +29,7 @@ should change. Such changes may include:
 
 - A substantial refactor, which takes a developer roughly an entire sprint or more.
 - Public facing changes, which might need to be coordinated with other groups inside or outside of
-  CTD.
+  TID.
 
 Changes that don't need an RFC may be:
 

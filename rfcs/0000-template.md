@@ -58,7 +58,7 @@ Why should we *not* do this?
 Discuss prior art, both the good and the bad, in relation to this proposal. A few examples of what
 this can include are:
 
-- Can we learn something about this proposal from other projects in CTD?
+- Can we learn something about this proposal from other projects in TID?
 - Can we learn something about this proposal from other transit agencies?
 - Can we learn something about this proposal from past experiences in other jobs or projects?
 
