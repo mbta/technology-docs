@@ -1,8 +1,8 @@
 - Feature Name: central_station
 - Start Date: 2022-03-07
-- RFC PR: [mbta/technology-docs#0000](https://github.com/mbta/technology-docs/pull/0000)
-- Asana task: [asana link](https://app.asana.com/)
-- Status: Proposed
+- RFC PR: [mbta/technology-docs#12](https://github.com/mbta/technology-docs/pull/12)
+- Asana task: n/a
+- Status: Rejected
 
 # Summary
 
