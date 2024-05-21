@@ -42,16 +42,17 @@ The TID data architecture does not exist in a vacuum. For our purposes in this R
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Explain the proposal as if it was already implemented and you were teaching it to a new developer
-that just joined the team. That generally means:
+## Schedule data: HASTUS and TODS
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how programmers should *think* about the feature, and how it should impact the way they
-  work on this project. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to senior developers and to junior
-  developers.
+Glides will move towards using the HASTUS-provided trip ID in its schedule data.
+
+(Update with any future thoughts based on TODS conversations.)
+
+## Realtime data: Glides trainsheets and RTR
+
+For scheduled trips, the [trip key published in `glides.trips_updated` events](https://mbta.github.io/schemas/events/glides/com.mbta.ctd.glides.trips_updated.v1#tripkey) will need to be updated in a new version of the schema to include this ID. The `serviceDate` will still need to be present in order to map from HASTUS schedule IDs to GTFS service IDs.
+
+Glides will still need to accommodate added trips. When RTR receives an added trip from Glides, it should use the given trip ID for vehicle assignments. However, if a train that is assigned to an added trip from Glides changes state in such a way that it should be assigned to a different trip by RTR's logic (for instance: unexpectedly going off its current pattern, or changing directions), RTR is free to assign that train to a different trip of its choosing.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -97,11 +98,7 @@ Note that while precedent is some motivation, it does not on its own motivate an
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature
-  before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the
-  future independently of the solution that comes out of this RFC?
+For the purposes of this RFC, we have had to assume that there will still be planned disruptions that have not been modeled in HASTUS in a way that reflects actual operations and trainsheets. This leaves open questions as to whether this will always be the case, and whether or not we will one day be able to assume that the schedule from HASTUS reflects planned operations in all cases.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
