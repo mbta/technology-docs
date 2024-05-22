@@ -37,7 +37,14 @@ Currently, however, our model of trip data on light rail leaves a great deal to 
 
 In addition to the technical challenges, this also creates unclear ownership of different parts of the data pipeline, with different teams implementing their own logic piecemeal to serve their own needs.
 
-The TID data architecture does not exist in a vacuum. For our purposes in this RFC, the main outside factor that we need to be aware of is the HASTUS system used for scheduling and the Plans & Schedules team that uses it to produce the new light rail schedule every rating.
+The TID data architecture does not exist in a vacuum. For our purposes in this RFC, the main outside factor that we need to be aware of is the HASTUS system used for scheduling and the Plans & Schedules team that uses it to produce the new light rail schedule every rating. Challenges in this area, in particular around schedules during disruptions, will be factored in.
+
+Finally, I want to take a second to lay out some guiding principles and goals that have guided the decisions in this RFC:
+
+1. Having a single source of truth for data.
+1. Creating clear understanding between teams about ownership of different parts of the data pipeline.
+1. Balancing the needs of internal operations users and public-facing users.
+1. Staying as close as possible to the most basic common denominator in data across TID systems, in this case GTFS trips. This means that improvements benefit as many teams and applications as possible, and we adhere to the principle of "small pieces, loosely joined" by a common standard.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -47,6 +54,8 @@ The TID data architecture does not exist in a vacuum. For our purposes in this R
 Glides will move towards using the HASTUS-provided trip ID in its schedule data.
 
 (Update with any future thoughts based on TODS conversations.)
+
+(Also to go here: high-level overview of how Glides will handle these changes, including things like DB schema updates, if any)
 
 ## Realtime data: Glides trainsheets and RTR
 
