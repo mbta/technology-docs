@@ -51,15 +51,13 @@ Finally, I want to take a second to lay out some guiding principles and goals th
 
 ## Schedule data: HASTUS and TODS
 
-Glides will move towards using the HASTUS-provided trip ID in its schedule data.
+Glides will move towards using the HASTUS-provided trip ID in its schedule data. Currently, Glides [generates its own](https://github.com/mbta/glides/blob/fbe9578c8400b955304c74d34e672460a0d17a23/lib/glides/import/import_scheduled_trips.ex#L184) trip ID during the rating import process. The import code can be modified between ratings, and the next rating import will simply apply the new logic. These are the same trip IDs that GTFS ultimately uses (barring disruptions), so this means that Glides will have a foreign key it can use to communicate with other systems like RTR more easily, and the existing trip ID column can be reused.
 
-(Update with any future thoughts based on TODS conversations.)
-
-(Also to go here: high-level overview of how Glides will handle these changes, including things like DB schema updates, if any)
+In the future, Glides will move to importing scheduled trips from the [Transit Operational Data Standard (TODS)](https://ods.calitp.org/) file produced by Transit Data. This will similarly use trip IDs sourced from HASTUS and so the trip ID logic will not have to change, although the `schedule_id` we currently use will likely need to be replaced with a `service_id` to match the GTFS-based TODS standard. This change should be largely orthogonal to other changes proposed in this document, so work on TODS does not need to block adoption of these recommendations, or vice versa.
 
 ## Realtime data: Glides trainsheets and RTR
 
-In the first stage, RTR and Glides will continue to maintain their own separate trip assignment systems, but Glides will begin sending HASTUS-based trip IDs in trainsheet update events. For scheduled trips, the [trip key published in `glides.trips_updated` events](https://mbta.github.io/schemas/events/glides/com.mbta.ctd.glides.trips_updated.v1#tripkey) will need to be updated in a new version of the schema to include this ID. The `serviceDate` will still need to be present in order to map from HASTUS schedule IDs to GTFS service IDs.
+In the first stage, RTR and Glides will continue to maintain their own separate trip assignment systems, but Glides will begin sending HASTUS-based trip IDs in trainsheet update events. For scheduled trips, the [trip key published in `glides.trips_updated` events](https://mbta.github.io/schemas/events/glides/com.mbta.ctd.glides.trips_updated.v1#tripkey) will need to be updated in a new version of the schema to include this ID. The `serviceDate` will still need to be present in order to map from HASTUS schedule IDs to GTFS service IDs. The [Glides code that generates the trip key for the event](https://github.com/mbta/glides/blob/fbe9578c8400b955304c74d34e672460a0d17a23/lib/glides_web/channels/trainsheet_channel.ex#L1324) already has access to the `ScheduledTrip` with its trip ID, so once we are importing the trip ID from Hastus we will simply be able to reference that. This will be a backwards-incompatible change, requiring a new version of the schema.
 
 Glides will still need to accommodate added trips. When RTR receives an added trip from Glides, it should factor the given trip ID in for vehicle assignments. However, if a train that is assigned to an added trip from Glides changes state in such a way that it should be assigned to a different trip by RTR's logic (for instance: unexpectedly going off its current pattern, or changing directions), RTR is free to assign that train to a different trip of its choosing. RTR will still be free to create its own added trips as needed.
 
