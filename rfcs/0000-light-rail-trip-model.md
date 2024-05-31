@@ -68,14 +68,17 @@ In a future state, Glides will be responsible for light rail trip assignments, a
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+## GTFS and TODS schedule data
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+Light rail schedule data in GTFS and (eventually) TODS files will be produced by `gtfs_creator` based on an export from HASTUS. The HASTUS trips for the lead car will be the basis for GTFS trips, and GTFS trips will take on their IDs. Integrating the schedule for multi-car trips (that is, trips with a trailer) into the TODS data will be defined in a separate discussion about the adoption of TODS. When `gtfs_creator` takes a trip from HASTUS and outputs it with only minor factual corrections, it should retain the original trip ID. However, if a trip is actively modified as part of the `gtfs_creator` disruption modeling process, its ID must be changed so as to not overlap with the HASTUS trip IDs.
 
-The section should return to the examples given in the previous section, and explain more fully how
-the detailed proposal makes those examples work.
+## Glides schedule import
+
+Glides will import schedule data from either its own HASTUS export or, in the future, TODS. In either case, trip data is loaded into the `scheduled_trips` table. The HASTUS trip ID will be used directly to populate the `trip_id` column.
+
+## Glides trainsheet edit events
+
+The `com.mbta.ctd.glides.trips_updated` event schema will receive a version bump, modifying the `TripKey` datatype. `TripKey` will be the same for both added and scheduled trips, in either case being represented as an object with `"serviceDate"` and `"tripId"` keys, where the `tripId` is sourced from the `trip_id` column of `scheduled_trips` for a scheduled trip, or the auto-generated Glides ID for an added trip.
 
 # Drawbacks
 [drawbacks]: #drawbacks
