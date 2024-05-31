@@ -83,7 +83,7 @@ The `com.mbta.ctd.glides.trips_updated` event schema will receive a version bump
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+The primary drawback of doing this is if we decide that the benefits outlined in the [Motivation](#motivation) section are not worth the effort. There are also potential downsides to having Glides become the source of truth for trip assignment data; some of those are discussed in the [Rationale and alternatives](#rationale-and-alternatives) section below.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -104,19 +104,13 @@ The main downsides of putting this logic in Glides are:
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal. A few examples of what
-this can include are:
+The main prior art for this proposal comes from other MBTA modes, in particular bus and heavy rail.
 
-- Can we learn something about this proposal from other projects in TID?
-- Can we learn something about this proposal from other transit agencies?
-- Can we learn something about this proposal from past experiences in other jobs or projects?
+In the case of bus, operators sign in with a run number, thereby indicating the work that they will be doing. Stateful logic in TransitMaster and Swiftly is then able to combine the run schedule with realtime location tracking to update the assigned trip that a bus is operating. With some minor subtlety around a handful of individual trips that are broken up across multiple routes, all systems have the same trips and trip IDs from HASTUS. Major modifications to bus schedule data by `gtfs_creator` are rare, usually amounting at most to minor corrections to shapes or information about stops.
 
-This section is intended to encourage you as an author to think about the lessons from other places,
-and provide readers of your RFC with a fuller picture.
+At the other extreme, heavy rail tracking and trip assignment is mostly centralized in the OCS. Rather than having operator sign-ins on on-board hardware, dispatchers assign a vehicle to a trip and the OCS simply updates the trip assignments based on schedules as vehicles reach their terminals and complete trips. RTR still performs its own supplementary trip assignment logic on top of this in order to handle cases like vehicles deviating from the expected course of their scheduled trip.
 
-If there is no prior art, that is fine.
-
-Note that while precedent is some motivation, it does not on its own motivate an RFC.
+Of the two models, the proposed end state on light rail most closely resembles the current state on heavy rail. We currently lack the on-vehicle hardware to implement a bus-like solution for light rail, but Glides already exists and provides a means for other operations personnel to provide us with information about which trips are being operated by what vehicles.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
