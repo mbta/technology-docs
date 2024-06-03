@@ -93,6 +93,8 @@ The Glides application will be primarily responsible for establishing the train 
 1. Train movement (for instance, marking a train as no longer assigned to a trip when it reaches that trip's endpoint, or assigning it to a different trip if appropriate)
 1. Train location (for instance, marking a train as no longer assigned to a trip if its current location is no longer on the path from the start point to the end point, including being headed in the correct direction)
 
+While there are not hard requirements around this, Glides should generally try to produce trip assignments for any vehicle tracking in the realtime data that is plausibly on a revenue trip. This is both for the benefit of predictions (trains are generally assumed to be in revenue service unless explicitly associated with a non-revenue trip) and for operations (having a trip in the internal Glides data model provides a location to store any additional metadata). For the time being, trip matches performed to provide a placeholder trip for a train not associated with a trip explicitly via the cars entered on a trainsheet will generally be ADDED trips that do not appear on the trainsheet interface. They will, however, generate corresponding `com.mbta.ctd.glides.trips_updated` events creating those added trips.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
