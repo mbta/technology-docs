@@ -61,9 +61,11 @@ In the first stage, RTR and Glides will continue to maintain their own separate 
 
 RTR will use the trip IDs from the trainsheet edit events when determining what trip ID to publish for a vehicle matching that trip. The trip matching logic itself will still live with RTR at this point, but if RTR believes that a train is a particular trip from the trainsheet, it should use the corresponding trip ID in the public GTFS-rt feed. However, if a train that is assigned to a scheduled trip from Glides changes state in such a way that it should be assigned to a different trip by RTR's logic (for instance: unexpectedly going off its current pattern, or changing directions), RTR is free to assign that train to a different trip of its choosing. RTR will still be free to create its own added trips as needed.
 
-Additionally, RTR will need to handle cases where current service as reflected in GTFS static does not match the HASTUS-based trainsheets in Glides, due to planned disruptions modeled by `gtfs_creator`.
+Additionally, RTR will need to handle cases where current service as reflected in GTFS static does not match the HASTUS-based trainsheets in Glides, due to planned disruptions modeled by `gtfs_creator`. In these cases, the data will manifest as trainsheet update messages with HASTUS-based trip IDs that do not match up with the trip IDs currently running per the GTFS static schedule.
 
-In a future state, Glides will be responsible for light rail trip assignments, and generate a new event feed of train-to-trip assignment events.
+## Train - trip assignment feed
+
+In a future state, Glides will be responsible for light rail trip assignments, and generate a new event feed of train-to-trip assignment events. RTR will use this as its primary source of information 
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -79,6 +81,17 @@ Glides will import schedule data from either its own HASTUS export or, in the fu
 ## Glides trainsheet edit events
 
 The `com.mbta.ctd.glides.trips_updated` event schema will receive a version bump, modifying the `TripKey` datatype. `TripKey` will be the same for both added and scheduled trips, in either case being represented as an object with `"serviceDate"` and `"tripId"` keys, where the `tripId` is sourced from the `trip_id` column of `scheduled_trips` for a scheduled trip, or the auto-generated Glides ID for an added trip.
+
+## Glides train - trip assignment events
+
+A new `com.mbta.ctd.glides.vehicle_trip_assignment` event will be established. The exact schema will be defined via the pull request review procedure on the [`mbta/schemas`](https://github.com/mbta/schemas/) repository, but there are some basic criteria that can be established. Events will at least have a `tripId` and `vehicleId` key. The `tripId` will be the scheduled or added trip ID from Glides, and the `vehicleId` will correspond to the ID of the vehicle in the GTFS-rt feed. Each event will represent the assignment of the given `vehicleId` to the given `tripId`. Either a variation of this event or a separate event will exist for unassigning a vehicle from a trip.
+
+The Glides application will be primarily responsible for establishing the train - trip matching. While exact details of the logic are beyond the scope of this RFC, factors that are likely to be weighed include:
+
+1. Cars entered for trips on trainsheets
+1. Additional mid-line edits to trips by Glides users, however those are represented
+1. Train movement (for instance, marking a train as no longer assigned to a trip when it reaches that trip's endpoint, or assigning it to a different trip if appropriate)
+1. Train location (for instance, marking a train as no longer assigned to a trip if its current location is no longer on the path from the start point to the end point, including being headed in the correct direction)
 
 # Drawbacks
 [drawbacks]: #drawbacks
