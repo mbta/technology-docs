@@ -135,17 +135,4 @@ For the purposes of this RFC, we have had to assume that there will still be pla
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would be and how it would
-affect the project as a whole in a holistic way. Try to use this section as a tool to more fully
-consider all possible interactions with the project in your proposal. Also consider how this all
-fits into the roadmap for the project.
-
-This is also a good place to "dump ideas", if they are out of scope for the RFC you are writing but
-otherwise related.
-
-If you have tried and cannot think of any future possibilities, you may simply state that you cannot
-think of anything.
-
-Note that having something written down in the future-possibilities section is not a reason to
-accept the current or a future RFC; such notes should be in the section on motivation or rationale
-in this or subsequent RFCs. The section merely provides additional information.
+As outlined in the [Prior art](#prior-art) section, there are multiple ways to approach realtime transit data depending on the underlying dispatch and CAD/AVL architecture being used. If, in the future, the MBTA light rail receives a CAD/AVL system more in line with what is currently present on bus, that will likely render aspects of this RFC obsolete. However, if that does happen it will likely take a while to be implemented, and having our various systems in agreement with respect to their model of trips will make it easier to integrate additional tooling. The basic architecture defined here can be augmented with a different application publishing trip assignment events and Glides becoming a consumer rather than a producer of that particular data.
