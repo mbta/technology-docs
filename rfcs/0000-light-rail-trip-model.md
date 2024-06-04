@@ -111,11 +111,9 @@ In the first stage, RTR and Glides will continue to maintain their own separate 
 
 RTR will use the trip IDs from the trainsheet edit events when determining what trip ID to publish for a vehicle matching that trip. The trip matching logic itself will still live with RTR at this point, but if RTR believes that a train is a particular trip from the trainsheet, it should use the corresponding trip ID in the public GTFS-rt feed. However, if a train that is assigned to a scheduled trip from Glides changes state in such a way that it should be assigned to a different trip by RTR's logic (for instance: unexpectedly going off its current pattern, or changing directions), RTR is free to assign that train to a different trip of its choosing. RTR will still be free to create its own added trips as needed.
 
-Additionally, RTR will need to handle cases where current service as reflected in GTFS static does not match the HASTUS-based trainsheets in Glides, due to planned disruptions modeled by `gtfs_creator`. In these cases, the data will manifest as trainsheet update messages with HASTUS-based trip IDs that do not match up with the trip IDs currently running per the GTFS static schedule.
+Additionally, RTR will need to handle cases where current service as reflected in GTFS static does not match the HASTUS-based trainsheets in Glides, due to planned disruptions modeled by `gtfs_creator`. In these cases, the data will manifest as trainsheet update messages with HASTUS-based trip IDs that do not match up with the trip IDs currently running per the GTFS static schedule. This will continue to be a potential issue, even with trip matching handled in Glides, so it is explored in more depth in the [Reference-level explanation](#reference-level-explanation) section.
 
-(TODO: what if we skip the intermediate state?)
-
-(TODO: What would my _ideal_ architecture be keeping OCS and HASTUS fixed but starting TID from scratch?)
+This intermediate state is proposed to allow for a more incremental implementation that's easier to deliver and provides some value without requiring too much deep refactoring of RTR. It can optionally be skipped if the Glides and Transit Data teams collectively decide that it creates more net work for not enough additional benefit.
 
 ## Train - trip assignment feed
 
@@ -150,15 +148,13 @@ The Glides application will be primarily responsible for establishing the train 
 
 While there are not hard requirements around this, Glides should generally try to produce trip assignments for any vehicle tracking in the realtime data that is operating on the mainline (as opposed to in a yard). This is important for RTR to be able to make predictions without doing additional trip assignment logic (any train operating in service should be getting predictions, whether revenue train predictions in the public GTFS-rt feed or non-revenue predictions for in-station announcements about trains that won't stop). Additionally, it has benefits for operations (having a trip in the internal Glides data model provides a location to store any additional metadata, such as notes). For the time being, trip matches performed to provide a placeholder trip for a train not associated with a trip explicitly via the cars entered on a trainsheet will generally be ADDED trips that do not appear on the trainsheet interface. They will, however, generate corresponding `com.mbta.ctd.glides.trips_updated` events creating those added trips.
 
-Once this feed is implemented, RTR should adopt it as its source of truth for determining trip assignments.
+Once this feed is implemented, RTR should adopt it as its source of truth for determining trip assignments in the data that it publishes. If RTR receives a `vehicle_trip_assignment` event for a trip ID that it does not recognize (via either the GTFS schedule or via a trip add `trips_updated` event), it should map that to a unique added trip ID of its own and maintain that mapping in the GTFS-rt feed for the duration of the trip (that is, the unrecognized trip ID from Glides should not suddenly become mapped to a different randomly-generated added trip). This is to handle the case where RTR is aware of a different set of trip IDs due to a disruption modeled in `gtfs_creator` but not in HASTUS. See [Rationale and alternatives](#rationale-and-alternatives) for some brief discussion of the tradeoff involved here.
 
 (TODO: There still is the trip linking question for reverse predictions)
 
 (TODO: Do we include all of the current trip data with each event or just the updates? Including all of the trip data helps keep in sync, but makes it harder for consumers (RTR) to identify specific fields that changed to take relevant actions. Ultimately a question for RTR and what works best for them. Changes to a trip would result in a new message even though vehicle is still assigned to same trip.)
 
 (TODO: maybe mention idea for splitting RTR in two)
-
-(TODO: Unmatched trains being put on placeholder added trips. Sky: should build the data model based on the desired concepts, not add things to the data model to make other things work. Me: OTOH, trips that we make predictions for are part of the desired concepts, but what if in the future we don't make predictions for random trains moving around that have no matching trip info from trainsheets?)
 
 # Drawbacks
 [drawbacks]: #drawbacks
