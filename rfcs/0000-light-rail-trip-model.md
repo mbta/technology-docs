@@ -64,7 +64,7 @@ The below diagram gives an overall view of the proposal. Solid lines represent s
 	gtfsrt["GTFS-rt"]
 	hastus -- Trips --> gtfs
 	hastus -- Trips --> glides
-	gtfs -- Schedule --> rtr
+	gtfs -- Trips --> rtr
 	glides -. Trip Assignments .-> rtr
 	glides -. Trainsheet Edits .-> rtr
 	rtr -.-> gtfsrt
@@ -85,9 +85,9 @@ The use of TODS will slightly modify the overall architecture diagram from above
 	glides["Glides"]
 	rtr["RTR"]
 	gtfsrt["GTFS-rt"]
-	hastus -- Schedule --> tods
+	hastus -- Trips --> tods
 	tods -- Trips --> glides
-	tods -- Schedule --> rtr
+	tods -- Trips --> rtr
 	glides -. Trip Assignments .-> rtr
 	glides -. Trainsheet Edits .-> rtr
 	rtr -.-> gtfsrt
