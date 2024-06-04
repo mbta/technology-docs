@@ -67,7 +67,7 @@ The below diagram gives an overall view of the proposal. Solid lines represent s
 	gtfs -- Trips --> rtr
 	glides -. Trip Assignments .-> rtr
 	glides -. Trainsheet Edits .-> rtr
-	rtr -.-> gtfsrt
+	rtr -. Publishes .-> gtfsrt
 ```
 
 ## Schedule data: HASTUS and TODS
@@ -90,7 +90,7 @@ The use of TODS will slightly modify the overall architecture diagram from above
 	tods -- Trips --> rtr
 	glides -. Trip Assignments .-> rtr
 	glides -. Trainsheet Edits .-> rtr
-	rtr -.-> gtfsrt
+	rtr -. Publishes .-> gtfsrt
 ```
 
 (TODO: Exception to pilot and trailer having same trip ID: pull-outs or pull-backs. Double-check if it's the same ID or not)
