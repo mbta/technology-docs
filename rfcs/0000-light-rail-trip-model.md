@@ -53,7 +53,7 @@ The TID data architecture does not exist in a vacuum. For our purposes in this R
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-(TODO: high-level summary of the solution, maybe a diagram or flowchart)
+The below diagram gives an overall view of the proposed finished state. Solid lines represent static data, whereas dotted lines represent realtime data.
 
 ```mermaid
   flowchart BT
@@ -64,8 +64,10 @@ The TID data architecture does not exist in a vacuum. For our purposes in this R
 	gtfsrt["GTFS-rt"]
 	hastus -- Trips --> gtfs
 	hastus -- Trips --> glides
-	glides -- Trip Assignments --> rtr
-	rtr --> gtfsrt
+	gtfs -- Schedule --> rtr
+	glides -. Trip Assignments -.> rtr
+	glides -. Trainsheet Edits -.> rtr
+	rtr -.> gtfsrt
 ```
 
 ## Schedule data: HASTUS and TODS
