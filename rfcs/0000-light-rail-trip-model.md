@@ -61,13 +61,15 @@ The below diagram gives an overall view of the proposal. Solid lines represent s
 	gtfs["`gtfs_creator`"]
 	glides["Glides"]
 	rtr["RTR"]
-	gtfsrt["GTFS-rt"]
+	predictions["TripUpdates"]
+	vehicles["VehiclePositions"]
 	hastus -- Trips --> gtfs
 	hastus -- Trips --> glides
 	gtfs -- Trips --> rtr
 	glides -. Trip Assignments .-> rtr
 	glides -. Trainsheet Edits .-> rtr
-	rtr -. Publishes .-> gtfsrt
+	rtr -. Publishes .-> predictions
+	rtr -. Publishes .-> vehicles
 ```
 
 ## Schedule data: HASTUS and TODS
@@ -84,13 +86,15 @@ The use of TODS will slightly modify the overall architecture diagram from above
 	tods["TODS"]
 	glides["Glides"]
 	rtr["RTR"]
-	gtfsrt["GTFS-rt"]
+	predictions["TripUpdates"]
+	vehicles["VehiclePositions"]
 	hastus -- Trips --> tods
 	tods -- Trips --> glides
 	tods -- Trips --> rtr
 	glides -. Trip Assignments .-> rtr
 	glides -. Trainsheet Edits .-> rtr
-	rtr -. Publishes .-> gtfsrt
+	rtr -. Publishes .-> predictions
+	rtr -. Publishes .-> vehicles
 ```
 
 (TODO: Exception to pilot and trailer having same trip ID: pull-outs or pull-backs. Double-check if it's the same ID or not)
