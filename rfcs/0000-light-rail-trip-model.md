@@ -53,7 +53,7 @@ The TID data architecture does not exist in a vacuum. For our purposes in this R
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The below diagram gives an overall view of the proposed finished state. Solid lines represent static data, whereas dotted lines represent realtime data.
+The below diagram gives an overall view of the proposal. Solid lines represent static data, whereas dotted lines represent realtime data:
 
 ```mermaid
   flowchart BT
@@ -75,6 +75,23 @@ The below diagram gives an overall view of the proposed finished state. Solid li
 Glides will move towards using the HASTUS-provided trip ID in its schedule data. Currently, Glides [generates its own](https://github.com/mbta/glides/blob/fbe9578c8400b955304c74d34e672460a0d17a23/lib/glides/import/import_scheduled_trips.ex#L184) trip ID during the rating import process. The import code can be modified between ratings, and the next rating import will simply apply the new logic. These are the same trip IDs that GTFS ultimately uses (barring disruptions), so this means that Glides will have a foreign key it can use to communicate with other systems like RTR more easily, and the existing trip ID column can be reused.
 
 In the future, Glides will move to importing scheduled trips from the [Transit Operational Data Standard (TODS)](https://ods.calitp.org/) file produced by Transit Data. This will similarly use trip IDs sourced from HASTUS and so the trip ID logic will not have to change, although the `schedule_id` we currently use will likely need to be replaced with a `service_id` to match the GTFS-based TODS standard. This change should be largely orthogonal to other changes proposed in this document, so work on TODS does not need to block adoption of these recommendations, or vice versa.
+
+The use of TODS will slightly modify the overall architecture diagram from above (assuming that RTR reads data from TODS as well):
+
+```mermaid
+  flowchart BT
+    hastus["HASTUS Schedule"]
+	tods["TODS"]
+	glides["Glides"]
+	rtr["RTR"]
+	gtfsrt["GTFS-rt"]
+	hastus -- Schedule --> tods
+	tods -- Trips --> glides
+	tods -- Schedule --> rtr
+	glides -. Trip Assignments .-> rtr
+	glides -. Trainsheet Edits .-> rtr
+	rtr -.-> gtfsrt
+```
 
 (TODO: Exception to pilot and trailer having same trip ID: pull-outs or pull-backs. Double-check if it's the same ID or not)
 
