@@ -74,7 +74,7 @@ The below diagram gives an overall view of the proposal. Solid lines represent s
 
 ## Schedule data: HASTUS and TODS
 
-Glides will move towards using the HASTUS-provided trip ID in its schedule data. Currently, Glides [generates its own](https://github.com/mbta/glides/blob/fbe9578c8400b955304c74d34e672460a0d17a23/lib/glides/import/import_scheduled_trips.ex#L184) trip ID during the rating import process. The import code can be modified between ratings, and the next rating import will simply apply the new logic. These are the same trip IDs that GTFS ultimately uses (barring disruptions), so this means that Glides will have a foreign key it can use to communicate with other systems like RTR more easily, and the existing trip ID column can be reused.
+Glides will move towards using the HASTUS-provided trip ID in its schedule data. Currently, Glides [generates its own](https://github.com/mbta/glides/blob/fbe9578c8400b955304c74d34e672460a0d17a23/lib/glides/import/import_scheduled_trips.ex#L184) trip ID during the rating import process. The import code can be modified between ratings, and the next rating import will simply apply the new logic. These are the same trip IDs that GTFS ultimately uses (barring disruptions), so this means that Glides will have a foreign key it can use to communicate with other systems like RTR more easily, and the existing trip ID column can be reused. There is some subtlety about exactly what we mean by "HASTUS-provided trip ID," which is elaborated on in the [Reference-level explanation](#reference-level-explanation).
 
 In the future, Glides will move to importing scheduled trips from the [Transit Operational Data Standard (TODS)](https://ods.calitp.org/) file produced by Transit Data. This will similarly use trip IDs sourced from HASTUS and so the trip ID logic will not have to change, although the `schedule_id` we currently use will likely need to be replaced with a `service_id` to match the GTFS-based TODS standard. This change should be largely orthogonal to other changes proposed in this document, so work on TODS does not need to block adoption of these recommendations, or vice versa.
 
@@ -97,13 +97,9 @@ The use of TODS will slightly modify the overall architecture diagram from above
 	rtr -. Publishes .-> vehicles
 ```
 
-(TODO: Exception to pilot and trailer having same trip ID: pull-outs or pull-backs. Double-check if it's the same ID or not)
-
 ## Realtime data: Glides trainsheets and RTR
 
 In the first stage, RTR and Glides will continue to maintain their own separate trip assignment systems, but Glides will begin sending HASTUS-based trip IDs in trainsheet update events. For scheduled trips, the [trip key published in `glides.trips_updated` events](https://mbta.github.io/schemas/events/glides/com.mbta.ctd.glides.trips_updated.v1#tripkey) will need to be updated in a new version of the schema to include this ID. The `serviceDate` will still need to be present in order to map from HASTUS schedule IDs to GTFS service IDs. The [Glides code that generates the trip key for the event](https://github.com/mbta/glides/blob/fbe9578c8400b955304c74d34e672460a0d17a23/lib/glides_web/channels/trainsheet_channel.ex#L1324) already has access to the `ScheduledTrip` with its trip ID, so once we are importing the trip ID from HASTUS we will simply be able to reference that. This will be a backwards-incompatible change, requiring a new version of the schema.
-
-(TODO: serviceDates and schedule / trip IDs - how unique are HASTUS trip IDs? Within schedule? Within rating? We assume all Green Line uses same Schedule ID. If multiple schedules are active on the same date, and the same trip ID can exist on multiple schedules, this could cause a problem.)
 
 (TODO: During disruptions - idea: continue publishing start / end location and time. This means RTR still has data to do its own matching, and makes it no longer a backwards-incompatible change)
 
@@ -128,7 +124,11 @@ Light rail schedule data in GTFS and (eventually) TODS files will be produced by
 
 ## Glides schedule import
 
-Glides will import schedule data from either its own HASTUS export or, in the future, TODS. In either case, trip data is loaded into the `scheduled_trips` table. The HASTUS trip ID will be used directly to populate the `trip_id` column.
+Glides will import schedule data from either its own HASTUS export or, in the future, TODS. In either case, trip data is loaded into the `scheduled_trips` table. The HASTUS trip ID will be used directly to populate the `trip_id` column. While working directly with HASTUS, some modifications will be necessary to which IDs we actually use. Currently, our export gets a column called `trp_number`, but the actual, database-unique ID is called `trp_int_number`, and the latter is also the value published by `gtfs_creator`. The significant different here is that cars grouped into one logical trip all have the same `trp_number` generally, but as `trp_int_number` is database-unique, that value will differ. We want the benefits of both combined trip information for multiple cars as well as uniqueness and agreement between systems. To achieve this, we will combine the trips for the different constituent cars and determine the ultimate ID in the following manner:
+
+1. Group the trip entries for each schedule ID by the `trp_number` value.
+1. For each resulting group, take the trip record for the lead car and use its `trp_int_number`.
+1. Use information about the trailer trip for data like the run number, but discard its `trp_int_number`.
 
 ## Glides trainsheet edit events
 
