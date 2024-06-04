@@ -65,9 +65,9 @@ The below diagram gives an overall view of the proposed finished state. Solid li
 	hastus -- Trips --> gtfs
 	hastus -- Trips --> glides
 	gtfs -- Schedule --> rtr
-	glides -. Trip Assignments -.> rtr
-	glides -. Trainsheet Edits -.> rtr
-	rtr -.> gtfsrt
+	glides -. Trip Assignments .-> rtr
+	glides -. Trainsheet Edits .-> rtr
+	rtr -.-> gtfsrt
 ```
 
 ## Schedule data: HASTUS and TODS
