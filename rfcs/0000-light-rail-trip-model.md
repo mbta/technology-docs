@@ -27,6 +27,8 @@ The concept of a "trip" is core to essentially all transit systems, and therefor
 
 This list is not exhaustive, and in some applications these other entities or data points may be accessed by joining via other parts of the data model as opposed to looking directly at a trip, but hopefully it impresses the importance getting trips right.
 
+## Present shortcomings
+
 Currently, however, our model of trip data on light rail leaves a great deal to be desired. For historical reasons, MBTA light rail vehicles have had neither on-vehicle systems by which an operator can assign their vehicle to a particular run (as in the case with bus) or a centralized dispatch system with its own model of trips and trip assignment (as with heavy rail). Furthermore, inconsistencies in how light rail trips are modeled across systems, related to peculiarities like having both a lead car and a trailer car that both need to have an operator scheduled, lead to more difficulty in exchanging data across systems. This situation creates a variety of tangible problems:
 
 1. Glides needs to perform complicated logic when importing schedule data from HASTUS to transform it into a model that matches the Glides trainsheet interface.
@@ -37,17 +39,34 @@ Currently, however, our model of trip data on light rail leaves a great deal to 
 
 In addition to the technical challenges, this also creates unclear ownership of different parts of the data pipeline, with different teams implementing their own logic piecemeal to serve their own needs.
 
-The TID data architecture does not exist in a vacuum. For our purposes in this RFC, the main outside factor that we need to be aware of is the HASTUS system used for scheduling and the Plans & Schedules team that uses it to produce the new light rail schedule every rating. Challenges in this area, in particular around schedules during disruptions, will be factored in.
+## Guiding principles and assumptions
 
-Finally, I want to take a second to lay out some guiding principles and goals that have guided the decisions in this RFC:
+Finally, I want to take a second to lay out some goals that have guided the decisions in this RFC:
 
 1. Having a single source of truth for data.
 1. Creating clear understanding between teams about ownership of different parts of the data pipeline.
 1. Balancing the needs of internal operations users and public-facing users.
 1. Staying as close as possible to the most basic common denominator in data across TID systems, in this case GTFS trips. This means that improvements benefit as many teams and applications as possible, and we adhere to the principle of "small pieces, loosely joined" by a common standard.
 
+The TID data architecture does not exist in a vacuum. For our purposes in this RFC, the main outside factor that we need to be aware of is the HASTUS system used for scheduling and the Plans & Schedules team that uses it to produce the new light rail schedule every rating. Challenges in this area, in particular around schedules during disruptions, will be factored in.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
+
+(TODO: high-level summary of the solution, maybe a diagram or flowchart)
+
+```mermaid
+  flowchart BT
+    hastus["HASTUS Schedule"]
+	gtfs["`gtfs_creator`"]
+	glides["Glides"]
+	rtr["RTR"]
+	gtfsrt["GTFS-rt"]
+	hastus -- Trips --> gtfs
+	hastus -- Trips --> glides
+	glides -- Trip Assignments --> rtr
+	rtr --> gtfsrt
+```
 
 ## Schedule data: HASTUS and TODS
 
@@ -55,13 +74,25 @@ Glides will move towards using the HASTUS-provided trip ID in its schedule data.
 
 In the future, Glides will move to importing scheduled trips from the [Transit Operational Data Standard (TODS)](https://ods.calitp.org/) file produced by Transit Data. This will similarly use trip IDs sourced from HASTUS and so the trip ID logic will not have to change, although the `schedule_id` we currently use will likely need to be replaced with a `service_id` to match the GTFS-based TODS standard. This change should be largely orthogonal to other changes proposed in this document, so work on TODS does not need to block adoption of these recommendations, or vice versa.
 
+(TODO: Exception to pilot and trailer having same trip ID: pull-outs or pull-backs. Double-check if it's the same ID or not)
+
 ## Realtime data: Glides trainsheets and RTR
 
 In the first stage, RTR and Glides will continue to maintain their own separate trip assignment systems, but Glides will begin sending HASTUS-based trip IDs in trainsheet update events. For scheduled trips, the [trip key published in `glides.trips_updated` events](https://mbta.github.io/schemas/events/glides/com.mbta.ctd.glides.trips_updated.v1#tripkey) will need to be updated in a new version of the schema to include this ID. The `serviceDate` will still need to be present in order to map from HASTUS schedule IDs to GTFS service IDs. The [Glides code that generates the trip key for the event](https://github.com/mbta/glides/blob/fbe9578c8400b955304c74d34e672460a0d17a23/lib/glides_web/channels/trainsheet_channel.ex#L1324) already has access to the `ScheduledTrip` with its trip ID, so once we are importing the trip ID from HASTUS we will simply be able to reference that. This will be a backwards-incompatible change, requiring a new version of the schema.
 
+(TODO: serviceDates and schedule / trip IDs - how unique are HASTUS trip IDs? Within schedule? Within rating? We assume all Green Line uses same Schedule ID. If multiple schedules are active on the same date, and the same trip ID can exist on multiple schedules, this could cause a problem.)
+
+(TODO: During disruptions - idea: continue publishing start / end location and time. This means RTR still has data to do its own matching, and makes it no longer a backwards-incompatible change)
+
+(TODO: Still useful for a consumer to know if a trip was added. Suggestion: added boolean field)
+
 RTR will use the trip IDs from the trainsheet edit events when determining what trip ID to publish for a vehicle matching that trip. The trip matching logic itself will still live with RTR at this point, but if RTR believes that a train is a particular trip from the trainsheet, it should use the corresponding trip ID in the public GTFS-rt feed. However, if a train that is assigned to a scheduled trip from Glides changes state in such a way that it should be assigned to a different trip by RTR's logic (for instance: unexpectedly going off its current pattern, or changing directions), RTR is free to assign that train to a different trip of its choosing. RTR will still be free to create its own added trips as needed.
 
 Additionally, RTR will need to handle cases where current service as reflected in GTFS static does not match the HASTUS-based trainsheets in Glides, due to planned disruptions modeled by `gtfs_creator`. In these cases, the data will manifest as trainsheet update messages with HASTUS-based trip IDs that do not match up with the trip IDs currently running per the GTFS static schedule.
+
+(TODO: what if we skip the intermediate state?)
+
+(TODO: What would my _ideal_ architecture be keeping OCS and HASTUS fixed but starting TID from scratch?)
 
 ## Train - trip assignment feed
 
@@ -97,6 +128,14 @@ The Glides application will be primarily responsible for establishing the train 
 While there are not hard requirements around this, Glides should generally try to produce trip assignments for any vehicle tracking in the realtime data that is plausibly on a revenue trip. This is both for the benefit of predictions (trains are generally assumed to be in revenue service unless explicitly associated with a non-revenue trip) and for operations (having a trip in the internal Glides data model provides a location to store any additional metadata). For the time being, trip matches performed to provide a placeholder trip for a train not associated with a trip explicitly via the cars entered on a trainsheet will generally be ADDED trips that do not appear on the trainsheet interface. They will, however, generate corresponding `com.mbta.ctd.glides.trips_updated` events creating those added trips.
 
 Once this feed is implemented, RTR should adopt it as its source of truth for determining trip assignments.
+
+(TODO: There still is the trip linking question for reverse predictions)
+
+(TODO: Do we include all of the current trip data with each event or just the updates? Including all of the trip data helps keep in sync, but makes it harder for consumers (RTR) to identify specific fields that changed to take relevant actions. Ultimately a question for RTR and what works best for them. Changes to a trip would result in a new message even though vehicle is still assigned to same trip.)
+
+(TODO: maybe mention idea for splitting RTR in two)
+
+(TODO: Unmatched trains being put on placeholder added trips. Sky: should build the data model based on the desired concepts, not add things to the data model to make other things work. Me: OTOH, trips that we make predictions for are part of the desired concepts, but what if in the future we don't make predictions for random trains moving around that have no matching trip info from trainsheets?)
 
 # Drawbacks
 [drawbacks]: #drawbacks
