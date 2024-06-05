@@ -150,11 +150,15 @@ While there are not hard requirements around this, Glides should generally try t
 
 Once this feed is implemented, RTR should adopt it as its source of truth for determining trip assignments in the data that it publishes. If RTR receives a `vehicle_trip_assignment` event for a trip ID that it does not recognize (via either the GTFS schedule or via a trip add `trips_updated` event), it should map that to a unique added trip ID of its own and maintain that mapping in the GTFS-rt feed for the duration of the trip (that is, the unrecognized trip ID from Glides should not suddenly become mapped to a different randomly-generated added trip). This is to handle the case where RTR is aware of a different set of trip IDs due to a disruption modeled in `gtfs_creator` but not in HASTUS. See [Rationale and alternatives](#rationale-and-alternatives) for some brief discussion of the tradeoff involved here.
 
-(TODO: There still is the trip linking question for reverse predictions)
+### Glides data requirements
+
+Having Glides handle all trip assignments will require Glides having a direct feed of all vehicle position data. Currently, RTR excludes some known non-revenue yard pull-outs and pull-backs, which makes sense from a passenger information perspective. Internal consumers like Glides will need a more direct feed of the data before any filtering is applied. While the exact mechanism for achieving this is out of scope for this RFC, it is worth noting as a requirement as it relates to other discussions around re-architecting RTR. One possibility that has been discussed is splitting RTR into a data aggregation and state tracking component and a predictions component, set up such that other applications like Glides can also be consumers of the data from the former.
+
+## Additional RTR prediction considerations
+
+Much like other realtime prediction systems, RTR generates predictions not only for currently-operating trips but for trips that have not yet begun where we are already tracking a vehicle on an earlier trip in the same block. This has posed problems with light rail as those operations are generally less block-based due to factors like having many yards at terminal locations allowing for more ad-hoc swapping of vehicles between trips. When inspectors enter car numbers on future trips this can, however, create implicit block relationships in realtime. This RFC does not directly solve the issue of how RTR should link subsequent trips for prediction purposes. What it does do, however, is make the relationship between realtime and schedule data clearer via better trip assignments, so that RTR can (for example) more easily factor in runs for the purposes of trip linking based on TODS data, if that is deemed to be a desirable approach.
 
 (TODO: Do we include all of the current trip data with each event or just the updates? Including all of the trip data helps keep in sync, but makes it harder for consumers (RTR) to identify specific fields that changed to take relevant actions. Ultimately a question for RTR and what works best for them. Changes to a trip would result in a new message even though vehicle is still assigned to same trip.)
-
-(TODO: maybe mention idea for splitting RTR in two)
 
 # Drawbacks
 [drawbacks]: #drawbacks
