@@ -1,7 +1,7 @@
 - Feature Name: Consistent Light Rail Trip Model Across TID Applications
 - Start Date: 2024-05-16
-- RFC PR: [mbta/technology-docs#0000](https://github.com/mbta/technology-docs/pull/0000)
-- Asana task: [asana link](https://app.asana.com/)
+- RFC PR: [mbta/technology-docs#25](https://github.com/mbta/technology-docs/pull/25)
+- Asana task: n/a
 - Status: Proposed
 
 # Summary
