@@ -107,10 +107,6 @@ The use of TODS will slightly modify the overall architecture diagram from above
 
 In the first stage, RTR and Glides will continue to maintain their own separate trip assignment systems, but Glides will begin sending HASTUS-based trip IDs in trainsheet update events. For scheduled trips, the [trip key published in `glides.trips_updated` events](https://mbta.github.io/schemas/events/glides/com.mbta.ctd.glides.trips_updated.v1#tripkey) will need to be updated in a new version of the schema to include this ID. The `serviceDate` will still need to be present in order to map from HASTUS schedule IDs to GTFS service IDs. The [Glides code that generates the trip key for the event](https://github.com/mbta/glides/blob/fbe9578c8400b955304c74d34e672460a0d17a23/lib/glides_web/channels/trainsheet_channel.ex#L1324) already has access to the `ScheduledTrip` with its trip ID, so once we are importing the trip ID from HASTUS we will simply be able to reference that. This will be a backwards-incompatible change, requiring a new version of the schema.
 
-(TODO: During disruptions - idea: continue publishing start / end location and time. This means RTR still has data to do its own matching, and makes it no longer a backwards-incompatible change)
-
-(TODO: Still useful for a consumer to know if a trip was added. Suggestion: added boolean field)
-
 RTR will use the trip IDs from the trainsheet edit events when determining what trip ID to publish for a vehicle matching that trip. The trip matching logic itself will still live with RTR at this point, but if RTR believes that a train is a particular trip from the trainsheet, it should use the corresponding trip ID in the public GTFS-rt feed. However, if a train that is assigned to a scheduled trip from Glides changes state in such a way that it should be assigned to a different trip by RTR's logic (for instance: unexpectedly going off its current pattern, or changing directions), RTR is free to assign that train to a different trip of its choosing. RTR will still be free to create its own added trips as needed.
 
 Additionally, RTR will need to handle cases where current service as reflected in GTFS static does not match the HASTUS-based trainsheets in Glides, due to planned disruptions modeled by `gtfs_creator`. In these cases, the data will manifest as trainsheet update messages with HASTUS-based trip IDs that do not match up with the trip IDs currently running per the GTFS static schedule. This will continue to be a potential issue, even with trip matching handled in Glides, so it is explored in more depth in the [Reference-level explanation](#reference-level-explanation) section.
@@ -164,8 +160,6 @@ Having Glides handle all trip assignments will require Glides having a direct fe
 
 Much like other realtime prediction systems, RTR generates predictions not only for currently-operating trips but for trips that have not yet begun where we are already tracking a vehicle on an earlier trip in the same block. This has posed problems with light rail as those operations are generally less block-based due to factors like having many yards at terminal locations allowing for more ad-hoc swapping of vehicles between trips. When inspectors enter car numbers on future trips this can, however, create implicit block relationships in realtime. This RFC does not directly solve the issue of how RTR should link subsequent trips for prediction purposes. What it does do, however, is make the relationship between realtime and schedule data clearer via better trip assignments, so that RTR can (for example) more easily factor in runs for the purposes of trip linking based on TODS data, if that is deemed to be a desirable approach.
 
-(TODO: Do we include all of the current trip data with each event or just the updates? Including all of the trip data helps keep in sync, but makes it harder for consumers (RTR) to identify specific fields that changed to take relevant actions. Ultimately a question for RTR and what works best for them. Changes to a trip would result in a new message even though vehicle is still assigned to same trip.)
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -173,6 +167,8 @@ The primary drawback of doing this is if we decide that the benefits outlined in
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+## Glides versus RTR as the source of truth for assignments
 
 In deciding which system would be the source of truth for assignments between trains and trips, I had to weight the pros and cons of both RTR and Glides taking that logic on, ultimately landing on having it live in Glides. The following factors influenced my decision:
 
@@ -186,6 +182,12 @@ The main downsides of putting this logic in Glides are:
 1. Glides will need to generate automatically-created trips for trains in service that aren't matched to any trip on a trainsheet, logic that is currently implemented in RTR. However, this is likely desirable anyway because Glides will need a place to associate things like trip notes on unmatched trains in the future.
 1. Glides may not be aware of some disruptions in its schedule data that are modeled at the `gtfs_creator` level, meaning that we will still need RTR to create ADDED trips for any scheduled trips that it doesn't recognize. With the current logic, RTR will at least attempt to match to trips in the disrupted GTFS. However, given that these trips aren't guaranteed to match actual operational practice, it's unclear how much value there is in matching to them anyway.
 1. It introduces a very slight lag in trip assignments making their way into passenger-facing data when updated due to train movements. RTR will need to receive the updated location information and Glides will need to receive it, and then Glides will in turn need to make the assignment and transit that information to RTR via an event. However, this added delay is likely minimal, especially if we move towards an event-based architecture for sending vehicle position updates from RTR to Glides (out of scope for this RFC but also something I want to consider in the future).
+
+## Alternative event schema approaches
+
+The approach outlined to changing the realtime event schemas leans strongly towards maintaining an incremental state transfer approach rather than sending all of the data on a given trip with each update. The rationale for this is that RTR needs to take action to update its own state when it receives information from Glides, and sending a full set of data actually makes it harder for RTR to tell exactly what has changed. It is also conceptually similar to the current OCS message architecture, so maintains a sort of symmetry between different data sources that RTR handles. This should, however, be flagged as an item for discussion in case these assumptions are incorrect.
+
+One case where this difference may be functionally relevant is during disruptions when Glides is sending updates for trips that may not match the GTFS schedule data that RTR has. In these cases, including trip metadata like origin / destination and start / end times could provide RTR with additional context if we still want to attempt some simple trip matching on the RTR side.
 
 # Prior art
 [prior-art]: #prior-art
