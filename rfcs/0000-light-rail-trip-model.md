@@ -61,6 +61,7 @@ The below diagram gives an overall view of the proposal. Solid lines represent s
 	gtfs["`gtfs_creator`"]
 	glides["Glides"]
 	rtr["RTR"]
+	ocs["OCS via Trike"]
 	predictions["TripUpdates"]
 	vehicles["VehiclePositions"]
 	hastus -- Trips --> gtfs
@@ -68,6 +69,8 @@ The below diagram gives an overall view of the proposal. Solid lines represent s
 	gtfs -- Trips --> rtr
 	glides -. Trip Assignments .-> rtr
 	glides -. Trainsheet Edits .-> rtr
+	ocs -. Vehicle Locations .-> rtr
+	rtr -. Vehicle Locations .-> glides
 	rtr -. Publishes .-> predictions
 	rtr -. Publishes .-> vehicles
 ```
@@ -86,6 +89,7 @@ The use of TODS will slightly modify the overall architecture diagram from above
 	tods["TODS"]
 	glides["Glides"]
 	rtr["RTR"]
+	ocs["OCS via Trike"]
 	predictions["TripUpdates"]
 	vehicles["VehiclePositions"]
 	hastus -- Trips --> tods
@@ -93,6 +97,8 @@ The use of TODS will slightly modify the overall architecture diagram from above
 	tods -- Trips --> rtr
 	glides -. Trip Assignments .-> rtr
 	glides -. Trainsheet Edits .-> rtr
+	ocs -. Vehicle Locations .-> rtr
+	rtr -. Vehicle Locations .-> glides
 	rtr -. Publishes .-> predictions
 	rtr -. Publishes .-> vehicles
 ```
