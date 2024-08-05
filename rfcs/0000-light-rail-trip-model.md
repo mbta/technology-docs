@@ -154,7 +154,7 @@ Once this feed is implemented, RTR MUST adopt it as its source of truth for dete
 
 ### Glides data requirements
 
-Having Glides handle all trip assignments will require Glides having a direct feed of all vehicle position data. Currently, RTR excludes some known non-revenue yard pull-outs and pull-backs, which makes sense from a passenger information perspective. Internal consumers like Glides will need a more direct feed of the data before any filtering is applied. While the exact mechanism for achieving this is out of scope for this RFC, it is worth noting as a requirement as it relates to other discussions around re-architecting RTR. One possibility that has been discussed is splitting RTR into a data aggregation and state tracking component and a predictions component, set up such that other applications like Glides can also be consumers of the data from the former.
+Having Glides handle all trip assignments will require Glides having a direct feed of all vehicle position data. Currently, RTR excludes some known non-revenue yard pull-outs and pull-backs, which makes sense from a passenger information perspective. Internal consumers like Glides will need a more direct feed of the data before any filtering is applied, in addition to certain non-public data fields like the train's AVI code. While the exact mechanism for achieving this is out of scope for this RFC, it is worth noting as a requirement as it relates to other discussions around re-architecting RTR. One possibility that has been discussed is splitting RTR into a data aggregation and state tracking component and a predictions component, set up such that other applications like Glides can also be consumers of the data from the former.
 
 ## Additional RTR prediction considerations
 
