@@ -132,6 +132,10 @@ Glides will import schedule data from either its own HASTUS export or, in the fu
 1. For each resulting group, take the trip record for the lead car and use its `trp_int_number`.
 1. Use information about the trailer trip for data like the run number, but discard its `trp_int_number`.
 
+It is worth noting that there have been cases in the past where `trp_number` hasn't been unique across different logical trips, so this may be worth addressing with the relevant teams generating the schedule or adding additional safeguards against.
+
+The trip combining logic described above will likely not be relevant for Glides directly if Glides uses TODS as opposed to HASTUS input, but creating a TODS file that fully represents the light rail data we need will likely need to address this concern as well, so this suggestion may still be relevant for the Transit Data team to consider.
+
 ## Glides trainsheet edit events
 
 The `com.mbta.ctd.glides.trips_updated` event schema will be modified to include a `tripId` key, where the `tripId` is sourced from the `trip_id` column of `scheduled_trips` for a scheduled trip, or the auto-generated Glides ID for an added trip.
