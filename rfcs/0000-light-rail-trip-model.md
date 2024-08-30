@@ -134,7 +134,7 @@ Glides will import schedule data from either its own HASTUS export or, in the fu
 
 ## Glides trainsheet edit events
 
-The `com.mbta.ctd.glides.trips_updated` event schema will receive a version bump, modifying the `TripKey` datatype. `TripKey` will be the same for both added and scheduled trips, in either case being represented as an object with `"serviceDate"` and `"tripId"` keys, where the `tripId` is sourced from the `trip_id` column of `scheduled_trips` for a scheduled trip, or the auto-generated Glides ID for an added trip.
+The `com.mbta.ctd.glides.trips_updated` event schema will be modified to include a `tripId` key, where the `tripId` is sourced from the `trip_id` column of `scheduled_trips` for a scheduled trip, or the auto-generated Glides ID for an added trip.
 
 ## Glides train - trip assignment events
 
