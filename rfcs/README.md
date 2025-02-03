@@ -95,6 +95,10 @@ discussion of the formal proposal that much more productive.
   - For RFCs with lengthy discussion, the motion to FCP is usually preceded by a
     summary comment trying to lay out the current state of the discussion and
     major tradeoffs/points of disagreement.
+- When the RFC is finalized:
+  - The RFC author moves the document to the appropriate folder (`accepted` or `rejected`).
+  - One of editors approves the PR.
+  - The RFC author merges the PR.
 
 ## The RFC life-cycle
 
