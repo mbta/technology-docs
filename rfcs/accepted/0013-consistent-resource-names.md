@@ -38,7 +38,7 @@ We use the following patterns for resources:
 	- https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
 - Terraform/OpenTofu resource, data source, and variable names: snake_case
         - https://www.terraform-best-practices.com/naming
-- Terraform/OpenTofu module names: kebab-case
+- Terraform/OpenTofu module names (i.e. directory names in terraform_modules and devops/terraform): kebab-case
         - https://developer.hashicorp.com/terraform/registry/modules/publish#requirements
 - ECS clusters: kebab-case
 - ECS applications: kebab-case
