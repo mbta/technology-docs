@@ -36,8 +36,10 @@ We use the following patterns for resources:
 	- https://www.ssl.com/faqs/underscores-not-allowed-in-domain-names/
 - S3 buckets: kebab-case
 	- https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
-- Terraform names: snake_case
+- Terraform/OpenTofu resource, data source, and variable names: snake_case
         - https://www.terraform-best-practices.com/naming
+- Terraform/OpenTofu module names (i.e. directory names in terraform_modules and devops/terraform): kebab-case
+        - https://developer.hashicorp.com/terraform/registry/modules/publish#requirements
 - ECS clusters: kebab-case
 - ECS applications: kebab-case
 - ECR repositories: kebab-case
