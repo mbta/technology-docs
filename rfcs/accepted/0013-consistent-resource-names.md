@@ -41,8 +41,8 @@ We use the following patterns for resources:
 - Terraform/OpenTofu module names (i.e. directory names in terraform_modules and devops/terraform): kebab-case
         - https://developer.hashicorp.com/terraform/registry/modules/publish#requirements
 - Scalr teams: snake_case
+- Keycloak roles: kebab_case (to match corresponding Scalr teams)
 - Keycloak clients: kebab-case
-- Keycloak roles: kebab-case
 - ECS clusters: kebab-case
 - ECS applications: kebab-case
 - ECR repositories: kebab-case
