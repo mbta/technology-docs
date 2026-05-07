@@ -1,6 +1,8 @@
 # LRTP Metrics Data Dictionary
 
 ## Current TripUpdates Table
+Data Source: `LAMP_DEVGREEN_RT_TripUpdates_LR_60_day`
+
 ### Custom Calculations
 Field Name | Description | Type | Query |
 --- | --- | --- |  --- |
@@ -50,6 +52,8 @@ Next TripUpdate Unique Daily Trip Identifier | Value to uniquely identify the ne
 ---
 
 ## Current VehiclePositions Table
+Data Source: `LAMP_DEVGREEN_RT_VehiclePositions_LR_60_day`
+
 ### Custom Calculations
 Field Name | Description | Type | Query |
 --- | --- | --- |  --- |
@@ -96,7 +100,7 @@ Next Vehicle Consist | Vehicle assignment for the next trip departure | String |
 Next Trip Terminal | The terminal station that the next trip departed from | String | Rename `[Trip Terminal]`
 Next Trip Service Date | The service date of the next trip departure | Date | Rename `[Trip Service Date]`
 Next Departure Time | The time that the next trip departed | Date & Time | Rename `[Departure Time]`
-Next Trip ID | The Trip ID of the the next trip departure | String | Rename  `[vehicle.trip.trip_id]` |
+Next Trip ID | The Trip ID of the next trip departure | String | Rename  `[vehicle.trip.trip_id]` |
 /# Predictions per Next Departure | Count of unique predictions generated for the next trip departure | Number (whole) | Rename `[# Predictions per Departure]`
 - Left join the current VehiclePositions table and next VehiclePositions tables on `Trip Departure Rank per Terminal`=`Next Trip Departure Rank per Terminal`, `Trip Service Date`=`Next Trip Service Date`, and `Trip Terminal`=`Next Trip Terminal`
 
@@ -202,10 +206,44 @@ False Positive Departure | Identify whether a trip is a false positive departure
 
 ---
 
+## Glides Trip Updates Table
+Data Source: `LAMP_ALL_Glides_trip_updates`
+
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+Glides/Trip Id | The Trip ID or Glides ID assigned to the trip departure | String | `IF(ISNULL([data.tripUpdates.tripKey.tripId])) THEN STR([data.tripUpdates.tripKey.glidesId]) ELSEIF(ISNULL([data.tripUpdates.tripKey.glidesId])) THEN STR([data.tripUpdates.tripKey.tripId]) ELSEIF(ISNULL([data.tripUpdates.tripKey.glidesId]) AND ISNULL([data.tripUpdates.tripKey.tripId])) THEN NULL END`
+Glides Unique Daily Trip Id | Field to uniquely identify the Glides trip departure based on trip service date and Glides/Trip ID | String | `str([data.tripUpdates.tripKey.serviceDate])  + " " +  str([Glides/Trip Id])`
+Initial Cars Update Time | The first time that the Glides vehicle consist was updated for the trip departure | Date & Time | `({ FIXED [Glides Unique Daily Trip Id]: MIN( IF NOT ISNULL([data.tripUpdates.cars]) and CONTAINS([data.tripUpdates.cars],'label') THEN [time] end) } )`
+UI Version | The Glides UI application version used by the user who updated the Glides vehicle consist first for the trip departure | String | `{FIXED [Glides Unique Daily Trip Id]: MIN(if [time] = [Initial Cars Update Time] then [data.metadata.uiVersion] END )}`
+Final Number of Cars per Trip | The number of cars in the final vehicle assignment for a trip departure | Number (whole) | `{fixed [Glides Unique Daily Trip Id]: min(if [time] = (({ FIXED [Glides Unique Daily Trip Id]: MAX( IF NOT ISNULL([data.tripUpdates.cars]) THEN [time] end) } )) then ((LEN([data.tripUpdates.cars])-LEN(REPLACE([data.tripUpdates.cars], '}, {', "")))/LEN('}, {')+1) END )}`
+Car1 Final Trip Vehicle Assignment | The final vehicle assignment of the 1st car for a trip departure | String | `{fixed [Glides Unique Daily Trip Id]: min(if [time] = (({ FIXED [Glides Unique Daily Trip Id]: MAX( IF NOT ISNULL((IF(REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=TRUE THEN (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END) ELSEIF (REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=FALSE THEN (IF (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END)='none' then "none" ELSE NULL end) END)) THEN [time] end) } )) then (IF(REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=TRUE THEN (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END) ELSEIF (REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=FALSE THEN (IF (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END)='none' then "none" ELSE NULL end) END) END )}`
+Car2 Final Trip Vehicle Assignment | The final vehicle assignment of the 2nd car for a trip departure | String | `{fixed [Glides Unique Daily Trip Id]: min(if [time] = ({ FIXED [Glides Unique Daily Trip Id]: MAX( IF NOT ISNULL((IF(REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=TRUE THEN (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END) ELSEIF (REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=FALSE THEN ( IF (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END)='none' then "none" ELSE NULL end) END)) THEN [time] end) } ) then (IF(REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=TRUE THEN (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END) ELSEIF (REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=FALSE THEN (IF (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END)='none' then "none" ELSE NULL end) END) END )}`
+Glides Consist | Final Glides vehicle assignment for the trip departure | String | `IF(CONTAINS((IF ([Final Number of Cars per Trip]=2) THEN [Car1 Final Trip Vehicle Assignment] +"-"+ [Car2 Final Trip Vehicle Assignment] ELSEIF([Final Number of Cars per Trip]=1) THEN [Car1 Final Trip Vehicle Assignment] ELSE NULL END),"none") OR ISNULL([Vehicle Consist Base])) THEN "Invalid" ELSE (IF ([Final Number of Cars per Trip]=2) THEN [Car1 Final Trip Vehicle Assignment] +"-"+ [Car2 Final Trip Vehicle Assignment] ELSEIF([Final Number of Cars per Trip]=1) THEN [Car1 Final Trip Vehicle Assignment] ELSE NULL END) END`
+
+---
+
+## Joined Data Table
+- Left join the joined VehiclePositions and Glides Trip Updates table on `VehiclePositions Unique Daily Trip Identifier`=`Glides Unique Daily Trip Id`
+
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+ADE | Amount of time in minutes between the first time that the Glides vehicle consist was updated and the departure time for a trip. If there was no Glides consist entry for a trip, return -999. | Number (whole) | `IF ISNULL(DATEDIFF('minute',[Initial Cars Update Time],[Departure Time])) THEN -999 ELSE DATEDIFF('minute',[Initial Cars Update Time],[Departure Time]) END`
+\# Departures with Consist Entry | The total number of terminal departures with Glides vehicle consist entry | Number (whole) | `COUNTD(IF NOT ISNULL([Initial Cars Update Time]) THEN [VehiclePositions Unique Daily Trip Identifier] ELSE NULL END)`
+% Departures with Consist Entry | Percentage of departures with Glides vehicle consist entry out of the total number of departures | Number (decimal) | `ZN([# Departures with Consist Entry]/[# Departures])`
+\# Departures with Desired ADE | The total number of terminal departures with a Glides vehicle consist entered at least Min. ADE Parameter minutes prior to the trip departure time | Number (whole) | `COUNTD(IF([ADE]>=[Min. ADE Parameter]) THEN [VehiclePositions Unique Daily Trip Identifier] ELSE NULL END)`
+% Departures with Desired ADE | Percentage of departures with a Glides vehicle consist entered at least Min. ADE Parameter minutes prior to the trip departure time out of the total number of departures | Number (decimal) | `ZN([# Departures with Desired ADE]/[# Departures])`
+\# Departures with Matching RTR and Glides Consists | The total number of terminal departures where the final Glides vehicle consist entry matches with the VehiclePositions Vehicle Consist | Number (whole) | `COUNTD(IF ([Vehicle Consist]=[Glides Consist] OR [Vehicle Consist Backwards]=[Glides Consist]) THEN [VehiclePositions Unique Daily Trip Identifier] ELSE NULL END)`
+% Departures with Matching RTR and Glides Consists | Percentage of departures where the final Glides vehicle consist entry matches with the VehiclePositions Vehicle Consist out of the total number of departures | Number (decimal) | `ZN([# Departures with Matching RTR and Glides Consists]/[# Departures])`
+
+---
+
 ### Parameters
 Field Name | Description | Type | Default Value |
 --- | --- | --- |  --- |
 Min. Advance Notice (minutes) | Minimum advance notice value in minutes |  Number (whole) | 0
+Min. ADE Parameter | Minimum number of minutes that a vehicle consist was entered into Glides prior to the departure | Number (whole) | 5
 Single or Multi-Day? | Allows the user the configure whether the report data should be for single service date or span multiple days | String | Single Day
 Single Day Service Date Parameter | If Single Day is selected, allows the user to set which service date the report should look at | Date | `[Latest Data Date]`
 Multi-Day Start Service Date Parameter | If Multi-Day is selected, allows the user to set which day the report service date range should start with | Date | `[2 Weeks Ago from Latest Data Date]`
