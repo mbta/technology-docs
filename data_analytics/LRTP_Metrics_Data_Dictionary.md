@@ -26,7 +26,7 @@ Predicted Departure Time | The time predicted that the trip will depart | Date &
 Field Name | Description | Type | Query |
 --- | --- | --- |  --- |
 Next Prediction Rank per Departure | Numerical order of the next prediction per trip departure | Number (whole) | `[Prediction Rank per Departure]-1`
-Next Prediction Generated Time | The time that the next trip prediction was generated | Date & Time | Rename `[TripUpdate feed_timestamp]`
+Next Prediction Generated Time Base | The time that the next trip prediction was generated | Date & Time | Rename `[TripUpdate feed_timestamp]`
 Next Predicted Departure Time | The time of the next trip predicition | Date & Time | Rename `[Predicted Departure Time]`
 Next TripUpdate Unique Daily Trip Identifier | Value to uniquely identify the next prediction based on the generated prediction time, the predicted departure time, and trip ID | String | Rename `[TripUpdate Unique Daily Trip Identifier]`
 - Full outer join the current joined data table and next joined data tables on `Prediction Rank per Departure`=`Next Prediction Rank per Departure` and `TripUpdate Unique Daily Trip Identifier`=`Next TripUpdate Unique Daily Trip Identifier`
@@ -162,7 +162,7 @@ Vehicle Consist Backwards | If there are 2 cars in a trip's vehicle consist then
 Prediction Generated after Terminal Departure | Identify whether a prediction was generated after the trip departure time | Boolean |  `IF (DATEDIFF('second',[TripUpdate feed_timestamp],[Departure Time]) <= 0) THEN TRUE ELSE FALSE END`
 Next Prediction Generated after Terminal Departure | Identify whether a prediction was generated after the trip departure time | Boolean |  `IF (DATEDIFF('second',[Next Prediction Generated Time],[Departure Time]) <= 0)  THEN TRUE ELSE FALSE END`
 Prediction Generated Time | The time that a prediction for the trip departure was generated, with any predictions made after the trip departure time removed | Date & Time | `IF([Prediction Generated after Terminal Departure]=TRUE) THEN NULL ELSE [TripUpdate feed_timestamp] END`
-Next Prediction Generated Time | The time that the next prediction for the trip departure was generated, with any predictions made after the trip departure time removed | Date & Time | `IF([Next Prediction Generated after Terminal Departure]=TRUE) THEN NULL ELSE [Next Prediction Generated Time] END`
+Next Prediction Generated Time | The time that the next prediction for the trip departure was generated, with any predictions made after the trip departure time removed | Date & Time | `IF([Next Prediction Generated after Terminal Departure]=TRUE) THEN NULL ELSE [Next Prediction Generated Time Base] END`
 Advance Notice (minutes) | Amount of time in minutes that a prediction was generated prior to the trip departure time | Number (whole) | `DATEDIFF('minute',[TripUpdates feed_timestamp],[Departure Time])`
 Advance Notice (minutes) per Departure | Amount of time in minutes that the first prediction of a trip was generated prior to the trip departure time | Number (whole) | `ZN({ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX([Advance Notice (minutes)]) })`
 Time that Departure was First Predicted | The first time that a prediction was generated for a trip departure | String | `IF (ISNULL({ FIXED [VehiclePositions Unique Daily Trip Identifier]: MIN([TripUpdates feed_timestamp])})) THEN "No prediction was made" ELSE STR({ FIXED [VehiclePositions Unique Daily Trip Identifier]: MIN([TripUpdates feed_timestamp])}) END`
