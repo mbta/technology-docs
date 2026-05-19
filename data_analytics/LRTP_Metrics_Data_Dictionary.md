@@ -1,101 +1,8 @@
 # LRTP Metrics Data Dictionary
 
-## Current VehiclePositions Table
-### Custom Calculations
-Field Name | Description | Type | Query |
---- | --- | --- |  --- |
-Trip Service Date | The service date of the trip departure (service date transitions at 4AM) | Date | `date(DATEPARSE("yyyyMMdd", [vehicle.trip.start_date]))`
-Latest Data Date | The day that the data has most recently been updated | Date | `{MAX([Trip Service Date])}`
-2 Weeks Ago from Latest Data Date | Two weeks before the day that the data has most recently been updated | Date | `{MAX([Trip Service Date])-15}`
-VehiclePositions Unique Daily Trip Identifier | Field to uniquely identify trip departures based on Trip Service Date and Trip ID | String | `str([Trip Service Date]) + " " + [vehicle.trip.trip_id]`
-Departure Time | The time that the trip departed (the first time that the vehicle starts moving towards the following station) | Date & Time | `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: MIN([VehiclePositions feed_timestamp] END)}`
-Departure Stop ID | The stop ID of the station that the trip is departing to | String | `{fixed [VehiclePositions Unique Daily Trip Identifier]: min(if [VehiclePositions feed_timestamp] = [Departure Time] then [vehicle.stop_id] END )}`
-Route | Trip departure route | String | `{fixed [VehiclePositions Unique Daily Trip Identifier]: min(if [VehiclePositions feed_timestamp] = [Departure Time] then [vehicle.trip.route_id] END )}`
-Vehicle Consist | Vehicle assignment for the trip departure | String | `{fixed [VehiclePositions Unique Daily Trip Identifier]: min(if [VehiclePositions feed_timestamp] = [Departure Time] then [vehicle.vehicle.label] END )}`
-Trip Terminal | The terminal station that the trip departed from | String | `CASE [Departure Stop ID] WHEN "70502" THEN "Union Square" WHEN "70510" THEN "Medford/Tufts" WHEN "70110" THEN "Boston College" WHEN "70236" THEN "Cleveland Circle" WHEN "70162" THEN "Riverside" WHEN "70274" THEN "Mattapan" END`
-Day of Week | Day of the week of the trip service date | String | `DATENAME('weekday', [Trip Service Date])`
-Hour | Hour of the trip departure time | String | `IF (DATEPART('hour',[Departure Time]))=0 THEN '12AM' ELSEIF (DATEPART('hour',[Departure Time]))=12 THEN '12PM' ELSEIF (DATEPART('hour',[Departure Time]))>12 THEN STR((DATEPART('hour',[Departure Time]))-12) + 'PM' ELSE STR((DATEPART('hour',[Departure Time]))) + 'AM' END`
-Trip Departure Rank per Terminal | Numerical order of the trip departure per terminal | Number (whole) | `{PARTITION [VehiclePositions Unique Daily Trip Identifier]: {ORDERBY [Departure Time] ASC,[vehicle.trip.trip_id] ASC: RANK_DENSE() }}` |
-
-### Data Filters
-- `vehicle.trip.revenue`=TRUE
-- `vehicle.trip.trip_id`!=NULL
-- `vehicle.stop_id`!=NULL
-- `feed_timestamp`!=NULL
-- `Departure Time`!=NULL
-
----
-
-## Next VehiclePositions Table
-### Custom Calculations
-Field Name | Description | Type | Query |
---- | --- | --- |  --- |
-Next Trip Departure Rank per Terminal | Numerical order of the next trip departure per terminal | Number (whole) | `[Trip Departure Rank per Terminal]-1`
-Next Vehicle Consist | Vehicle assignment for the next trip departure | String | Rename `[Vehicle Consist]`
-Next Trip Terminal | The terminal station that the next trip departed from | String | Rename `[Trip Terminal]`
-Next Trip Service Date | The service date of the next trip departure | Date | Rename `[Trip Service Date]`
-Next Departure Time | The time that the next trip departed | Date & Time | Rename `[Departure Time]`
-Next Trip ID | The Trip ID of the the next trip departure | String | Rename  `[vehicle.trip.trip_id]` |
-- Left join the current VehiclePositions table and next VehiclePositions tables on `Trip Departure Rank per Terminal`=`Next Trip Departure Rank per Terminal`, `Trip Service Date`=`Next Trip Service Date`, and `Trip Terminal`=`Next Trip Terminal`
-
----
-
-## After Next VehiclePositions Table
-### Custom Calculations
-Field Name | Description | Type | Query |
---- | --- | --- |  --- |
-Trip Departure Rank per Terminal After Next | Numerical order of the trip departure after next per terminal | Number (whole) | `[Trip Departure Rank per Terminal]-2`
-Vehicle Consist After Next | Vehicle assignment for the trip departure after next | String | Rename `[Vehicle Consist]`
-Trip Terminal After Next | The terminal station that the trip after next departed from | String | Rename `[Trip Terminal]`
-Trip Service Date After Next | The service date of the trip departure after next | Date | Rename `[Trip Service Date]`
-Departure Time After Next | The time that the trip after next departed | Date & Time | Rename `[Departure Time]`
-Trip ID After Next | The Trip ID of the trip departure after next | String | Rename  `[vehicle.trip.trip_id]` |
-- Left join the current VehiclePositions table and VehiclePositions after next tables on `Trip Departure Rank per Terminal`=`Trip Departure Rank per Terminal After Next`, `Trip Service Date`=`Trip Service Date After Next`, and `Trip Terminal`=`Trip Terminal After Next`
-
----
-
-## Prior VehiclePositions Table
-### Custom Calculations
-Field Name | Description | Type | Query |
---- | --- | --- |  --- |
-Prior Trip Departure Rank per Terminal | Numerical order of the prior trip departure per terminal | Number (whole) | `[Trip Departure Rank per Terminal]+1`
-Prior Vehicle Consist | Vehicle assignment for the prior trip departure | String | Rename `[Vehicle Consist]`
-Prior Trip Terminal | The terminal station that the prior trip departed from | String | Rename `[Trip Terminal]`
-Prior Trip Service Date | The service date of the prior trip departure | Date | Rename `[Trip Service Date]`
-Prior Departure Time | The time that the prior trip departed | Date & Time | Rename `[Departure Time]`
-Prior Trip ID | The Trip ID of the prior trip departure | String | Rename  `[vehicle.trip.trip_id]` |
--	Left join the current VehiclePositions table and prior VehiclePositions tables on `Trip Departure Rank per Terminal`=`Prior Trip Departure Rank per Terminal`, `Trip Service Date`=`Prior Trip Service Date`, and `Trip Terminal`=`Prior Trip Terminal`
-
----
-
-## Before Prior VehiclePositions Table
-### Custom Calculations
-Field Name | Description | Type | Query |
---- | --- | --- |  --- |
-Rank per Terminal Departure Before Prior | Numerical order of the trip before the prior one's departure per terminal | Number (whole) | `[Trip Departure Rank per Terminal]+2`
-Vehicle Consist Before Prior | Vehicle assignment for the trip before the prior one departure | String | Rename `[Vehicle Consist]`
-Trip Terminal Before Prior | The terminal station that the trip before the prior one  departed from | String | Rename `[Trip Terminal]`
-Trip Service Date Before Prior | The service date of the trip departure before the prior one | Date | Rename `[Trip Service Date]`
-Departure Time Before Prior | The time that the trip before prior departed | Date & Time | Rename `[Departure Time]`
-Trip ID Before Prior | The Trip ID of the trip departure before prior | String | Rename  `[vehicle.trip.trip_id]` |
--	Left join the current VehiclePositions table and VehiclePositions before prior tables on `Trip Departure Rank per Terminal`=`Before Prior Trip Departure Rank per Terminal`, `Trip Service Date`=`Prior Trip Service Date`, and `Trip Terminal`=`Before Prior Trip Terminal`
-
----
-
-## Union of all VehiclePositions tables
-- Perform a data union on all of the VehiclePositions tables
-
-### Custom Calculations
-Field Name | Description | Type | Query |
---- | --- | --- |  --- |
-Number of Cars | The total number of cars in a trip departure's vehicle consist | Number (whole) |  `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX(IF(LEN([Vehicle Consist])=4) THEN 1 ELSEIF (LEN([Vehicle Consist])=9) THEN 2 END)}` |
-Vehicle Consist Backwards | If there are 2 cars in a trip's vehicle consist then swap their order | String | `if([Number of Cars]=2) then (RIGHT(STR([Vehicle Consist]), 4) + "-" + LEFT(STR([Vehicle Consist]), 4)) else [Vehicle Consist] end`
-Next Departure Time with Same Consist | Time of the next trip departure with the same vehicle consist | Date & Time | `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: max(IF ([Vehicle Consist]=[Next Vehicle Consist]) THEN [Next Departure Time] ELSEIF ([Vehicle Consist]!=[Next Vehicle Consist] AND [Vehicle Consist]=[Vehicle Consist After Next]) THEN [Departure Time After Next] end)}`
-Prior Departure Time with Same Consist | Time of the last trip departure with the same vehicle consist | Date & Time | `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: max(IF ([Vehicle Consist]=[Prior Vehicle Consist]) THEN [Prior Departure Time] ELSEIF ([Vehicle Consist]!=[Prior Vehicle Consist] AND [Vehicle Consist]=[Vehicle Consist Before Prior]) THEN [Departure Time Before Prior] end)}`
-
----
-
 ## Current TripUpdates Table
+Data Source: `LAMP_DEVGREEN_RT_TripUpdates_LR_60_day`
+
 ### Custom Calculations
 Field Name | Description | Type | Query |
 --- | --- | --- |  --- |
@@ -111,6 +18,8 @@ Predicted Departure Time | The time predicted that the trip will depart | Date &
 - `trip_update.stop_time_update.schedule_relationship`!=SKIPPED
 - `trip_update.stop_time_update.departure.time`!=NULL
 - `Predictions After Departure Time`=FALSE
+- LEN(`[trip_update.vehicle.label]`)<=9
+- NOT CONTAINS(`trip_update.trip.trip_id`,'NONREV')
 
 ---
 
@@ -119,7 +28,7 @@ Predicted Departure Time | The time predicted that the trip will depart | Date &
 Field Name | Description | Type | Query |
 --- | --- | --- |  --- |
 Next Prediction Rank per Departure | Numerical order of the next prediction per trip departure | Number (whole) | `[Prediction Rank per Departure]-1`
-Next Prediction Generated Time | The time that the next trip prediction was generated | Date & Time | Rename `[TripUpdate feed_timestamp]`
+Next Prediction Generated Time Base | The time that the next trip prediction was generated | Date & Time | Rename `[TripUpdate feed_timestamp]`
 Next Predicted Departure Time | The time of the next trip predicition | Date & Time | Rename `[Predicted Departure Time]`
 Next TripUpdate Unique Daily Trip Identifier | Value to uniquely identify the next prediction based on the generated prediction time, the predicted departure time, and trip ID | String | Rename `[TripUpdate Unique Daily Trip Identifier]`
 - Full outer join the current joined data table and next joined data tables on `Prediction Rank per Departure`=`Next Prediction Rank per Departure` and `TripUpdate Unique Daily Trip Identifier`=`Next TripUpdate Unique Daily Trip Identifier`
@@ -137,13 +46,127 @@ Next TripUpdate Unique Daily Trip Identifier | Value to uniquely identify the ne
 
 ---
 
-## Joined Data Table
-- Left join the VehiclePositions and TripUpdates tables on `VehiclePositions Unique Daily Trip Identifier`=`TripUpdate Unique Daily Trip Identifier`
+## Union of all TripUpdates tables
+- Perform a data union on all of the TripUpdates tables
+
+---
+
+## Current VehiclePositions Table
+Data Source: `LAMP_DEVGREEN_RT_VehiclePositions_LR_60_day`
+
 ### Custom Calculations
 Field Name | Description | Type | Query |
 --- | --- | --- |  --- |
-Prediction Generated after Terminal Departure | Identify whether a prediction was generated after the trip departure time | Boolean |  `IF (DATEDIFF('second',[Prediction Generated Time],[Departure Time]) <= 0) THEN TRUE ELSE FALSE END` |
-Next Prediction Generated after Terminal Departure | Identify whether a prediction was generated after the trip departure time | Boolean |  `IF (DATEDIFF('second',[Next Prediction Generated Time],[Departure Time]) <= 0)  THEN TRUE ELSE FALSE END` |
+Trip Service Date | The service date of the trip departure (service date transitions at 4AM) | Date | `date(DATEPARSE("yyyyMMdd", [vehicle.trip.start_date]))`
+Latest Data Date | The day that the data has most recently been updated | Date | `{MAX([Trip Service Date])}`
+2 Weeks Ago from Latest Data Date | Two weeks before the day that the data has most recently been updated | Date | `{MAX([Trip Service Date])-15}`
+VehiclePositions Unique Daily Trip Identifier | Field to uniquely identify trip departures based on Trip Service Date and Trip ID | String | `str([Trip Service Date]) + " " + [vehicle.trip.trip_id]`
+Departure Time | The time that the trip departed (the first time that the vehicle starts moving towards the following station) | Date & Time | `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: MIN([VehiclePositions feed_timestamp] END)}`
+Departure Stop ID | The stop ID of the station that the trip is departing to | String | `{fixed [VehiclePositions Unique Daily Trip Identifier]: min(if [VehiclePositions feed_timestamp] = [Departure Time] then [vehicle.stop_id] END )}`
+Route | Trip departure route | String | `{fixed [VehiclePositions Unique Daily Trip Identifier]: min(if [VehiclePositions feed_timestamp] = [Departure Time] then [vehicle.trip.route_id] END )}`
+Vehicle Consist | Vehicle assignment for the trip departure | String | `{fixed [VehiclePositions Unique Daily Trip Identifier]: min(if [VehiclePositions feed_timestamp] = [Departure Time] then [vehicle.vehicle.label] END )}`
+Trip Terminal | The terminal station that the trip departed from | String | `CASE [Departure Stop ID] WHEN "70502" THEN "Union Square" WHEN "70510" THEN "Medford/Tufts" WHEN "70110" THEN "Boston College" WHEN "70236" THEN "Cleveland Circle" WHEN "70162" THEN "Riverside" WHEN "70274" THEN "Mattapan" END`
+Day of Week | Day of the week of the trip service date | String | `DATENAME('weekday', [Trip Service Date])`
+Hour | Hour of the trip departure time | String | `IF (DATEPART('hour',[Departure Time]))=0 THEN '12AM' ELSEIF (DATEPART('hour',[Departure Time]))=12 THEN '12PM' ELSEIF (DATEPART('hour',[Departure Time]))>12 THEN STR((DATEPART('hour',[Departure Time]))-12) + 'PM' ELSE STR((DATEPART('hour',[Departure Time]))) + 'AM' END`
+
+### Data Filters
+- `vehicle.trip.revenue`=TRUE
+- `vehicle.trip.trip_id`!=NULL
+- `vehicle.stop_id`!=NULL
+- `feed_timestamp`!=NULL
+- `Departure Time`!=NULL
+- LEN(`[vehicle.vehicle.label]`)<=9
+- NOT CONTAINS(`vehicle.trip.trip_id`,'NONREV')
+
+---
+
+## Joined Data Table
+- Left join the VehiclePositions table to the and TripUpdates table on `VehiclePositions Unique Daily Trip Identifier`=`TripUpdate Unique Daily Trip Identifier`
+
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+Trip Departure Rank per Terminal | Numerical order of the trip departure per terminal | Number (whole) | `{PARTITION [VehiclePositions Unique Daily Trip Identifier]: {ORDERBY [Departure Time] ASC,[vehicle.trip.trip_id] ASC: RANK_DENSE() }}` |
+\# Predictions per Departure | Count of unique predictions generated for the trip departure | Number (whole) | `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: COUNTD([TripUpdate Unique Prediction ID])}` |
+
+---
+
+## Next VehiclePositions Table
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+Next Trip Departure Rank per Terminal | Numerical order of the next trip departure per terminal | Number (whole) | `[Trip Departure Rank per Terminal]-1`
+Next Vehicle Consist | Vehicle assignment for the next trip departure | String | Rename `[Vehicle Consist]`
+Next Trip Terminal | The terminal station that the next trip departed from | String | Rename `[Trip Terminal]`
+Next Trip Service Date | The service date of the next trip departure | Date | Rename `[Trip Service Date]`
+Next Departure Time | The time that the next trip departed | Date & Time | Rename `[Departure Time]`
+Next Trip ID | The Trip ID of the next trip departure | String | Rename  `[vehicle.trip.trip_id]` |
+/# Predictions per Next Departure | Count of unique predictions generated for the next trip departure | Number (whole) | Rename `[# Predictions per Departure]`
+- Left join the current VehiclePositions table and next VehiclePositions tables on `Trip Departure Rank per Terminal`=`Next Trip Departure Rank per Terminal`, `Trip Service Date`=`Next Trip Service Date`, and `Trip Terminal`=`Next Trip Terminal`
+
+---
+
+## After Next VehiclePositions Table
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+Trip Departure Rank per Terminal After Next | Numerical order of the trip departure after next per terminal | Number (whole) | `[Trip Departure Rank per Terminal]-2`
+Vehicle Consist After Next | Vehicle assignment for the trip departure after next | String | Rename `[Vehicle Consist]`
+Trip Terminal After Next | The terminal station that the trip after next departed from | String | Rename `[Trip Terminal]`
+Trip Service Date After Next | The service date of the trip departure after next | Date | Rename `[Trip Service Date]`
+Departure Time After Next | The time that the trip after next departed | Date & Time | Rename `[Departure Time]`
+Trip ID After Next | The Trip ID of the trip departure after next | String | Rename  `[vehicle.trip.trip_id]` |
+/# Predictions per Departure After Next | Count of unique predictions generated for the trip departure after next | Number (whole) | Rename `[# Predictions per Departure]`
+- Left join the current VehiclePositions table and VehiclePositions after next tables on `Trip Departure Rank per Terminal`=`Trip Departure Rank per Terminal After Next`, `Trip Service Date`=`Trip Service Date After Next`, and `Trip Terminal`=`Trip Terminal After Next`
+
+---
+
+## Prior VehiclePositions Table
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+Prior Trip Departure Rank per Terminal | Numerical order of the prior trip departure per terminal | Number (whole) | `[Trip Departure Rank per Terminal]+1`
+Prior Vehicle Consist | Vehicle assignment for the prior trip departure | String | Rename `[Vehicle Consist]`
+Prior Trip Terminal | The terminal station that the prior trip departed from | String | Rename `[Trip Terminal]`
+Prior Trip Service Date | The service date of the prior trip departure | Date | Rename `[Trip Service Date]`
+Prior Departure Time | The time that the prior trip departed | Date & Time | Rename `[Departure Time]`
+Prior Trip ID | The Trip ID of the prior trip departure | String | Rename  `[vehicle.trip.trip_id]` |
+/# Predictions per Prior Departure | Count of unique predictions generated for the prior trip departure | Number (whole) | Rename `[# Predictions per Departure]`
+-	Left join the current VehiclePositions table and prior VehiclePositions tables on `Trip Departure Rank per Terminal`=`Prior Trip Departure Rank per Terminal`, `Trip Service Date`=`Prior Trip Service Date`, and `Trip Terminal`=`Prior Trip Terminal`
+
+---
+
+## Before Prior VehiclePositions Table
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+Rank per Terminal Departure Before Prior | Numerical order of the trip before the prior one's departure per terminal | Number (whole) | `[Trip Departure Rank per Terminal]+2`
+Vehicle Consist Before Prior | Vehicle assignment for the trip before the prior one departure | String | Rename `[Vehicle Consist]`
+Trip Terminal Before Prior | The terminal station that the trip before the prior one  departed from | String | Rename `[Trip Terminal]`
+Trip Service Date Before Prior | The service date of the trip departure before the prior one | Date | Rename `[Trip Service Date]`
+Departure Time Before Prior | The time that the trip before prior departed | Date & Time | Rename `[Departure Time]`
+Trip ID Before Prior | The Trip ID of the trip departure before prior | String | Rename  `[vehicle.trip.trip_id]` |
+/# Predictions per Departure Before Prior | Count of unique predictions generated for the trip departure before prior | Number (whole) | Rename `[# Predictions per Departure]`
+-	Left join the current VehiclePositions table and VehiclePositions before prior tables on `Trip Departure Rank per Terminal`=`Before Prior Trip Departure Rank per Terminal`, `Trip Service Date`=`Prior Trip Service Date`, and `Trip Terminal`=`Before Prior Trip Terminal`
+
+---
+
+## Union of all VehiclePositions tables
+- Perform a data union on all of the VehiclePositions tables
+
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+Number of Cars | The total number of cars in the trip departure's vehicle consist | Number (whole) |  `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX(IF(LEN([Vehicle Consist])=4) THEN 1 ELSEIF (LEN([Vehicle Consist])=9) THEN 2 END)}` |
+Number of Next Cars | The total number of cars in the next trip departure's vehicle consist | Number (whole) |  `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX(IF(LEN([Next Vehicle Consist])=4) THEN 1 ELSEIF (LEN([Next Vehicle Consist])=9) THEN 2 END)}` |
+Number of Cars After Next | The total number of cars in the vehicle consist of the trip departure after next | Number (whole) |  `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX(IF(LEN([Vehicle Consist After Next])=4) THEN 1 ELSEIF (LEN([Vehicle Consist After Next])=9) THEN 2 END)}` |
+Number of Prior Cars | The total number of cars in the prior trip departure's vehicle consist | Number (whole) |  `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX(IF(LEN([Prior Vehicle Consist])=4) THEN 1 ELSEIF (LEN([Prior Vehicle Consist])=9) THEN 2 END)}` |
+Number of Cars Before Prior | The total number of cars in the vehicle consist of the trip departure before prior | Number (whole) |  `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX(IF(LEN([Vehicle Consist Before Prior])=4) THEN 1 ELSEIF (LEN([Vehicle Consist Before Prior])=9) THEN 2 END)}` |
+Vehicle Consist Backwards | If there are 2 cars in a trip's vehicle consist then swap their order | String | `if([Number of Cars]=2) then (RIGHT(STR([Vehicle Consist]), 4) + "-" + LEFT(STR([Vehicle Consist]), 4)) else [Vehicle Consist] end`
+Prediction Generated after Terminal Departure | Identify whether a prediction was generated after the trip departure time | Boolean |  `IF (DATEDIFF('second',[TripUpdate feed_timestamp],[Departure Time]) <= 0) THEN TRUE ELSE FALSE END`
+Next Prediction Generated after Terminal Departure | Identify whether a prediction was generated after the trip departure time | Boolean |  `IF (DATEDIFF('second',[Next Prediction Generated Time],[Departure Time]) <= 0)  THEN TRUE ELSE FALSE END`
+Prediction Generated Time | The time that a prediction for the trip departure was generated, with any predictions made after the trip departure time removed | Date & Time | `IF([Prediction Generated after Terminal Departure]=TRUE) THEN NULL ELSE [TripUpdate feed_timestamp] END`
+Next Prediction Generated Time | The time that the next prediction for the trip departure was generated, with any predictions made after the trip departure time removed | Date & Time | `IF([Next Prediction Generated after Terminal Departure]=TRUE) THEN NULL ELSE [Next Prediction Generated Time Base] END`
 Advance Notice (minutes) | Amount of time in minutes that a prediction was generated prior to the trip departure time | Number (whole) | `DATEDIFF('minute',[TripUpdates feed_timestamp],[Departure Time])`
 Advance Notice (minutes) per Departure | Amount of time in minutes that the first prediction of a trip was generated prior to the trip departure time | Number (whole) | `ZN({ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX([Advance Notice (minutes)]) })`
 Time that Departure was First Predicted | The first time that a prediction was generated for a trip departure | String | `IF (ISNULL({ FIXED [VehiclePositions Unique Daily Trip Identifier]: MIN([TripUpdates feed_timestamp])})) THEN "No prediction was made" ELSE STR({ FIXED [VehiclePositions Unique Daily Trip Identifier]: MIN([TripUpdates feed_timestamp])}) END`
@@ -175,16 +198,52 @@ Departure Advance Notice > Min. Advance Notice Max Time | Returns the first time
 Continuous Coverage Between Advance Notice > Min. Advance Notice and Advance Notice <= Min. Advance Notice Predictions | Checks whether there is a gap between the first time the trip departure generates predictions and last time that a prediction was generated per trip if it is generated less than or equal to the min. advance notice | Boolean | `IF ((DATEDIFF('second',[Departure Advance Notice > Min. Advance Notice Max Time],[Departure Advance Notice <= Min. Advance Notice Min Time]))>20) THEN FALSE ELSE TRUE END`
 Gap Between Earliest Prediction Generated and Min Advance Notice | Checks whether there is a gap of up to 20 seconds between the earliest time that a prediction was generated for a trip departure and the Min. Advance Notice Time | Boolean | `IF(DATEDIFF('second',[Min. Advance Notice Time],[Earliest Prediction Generated Time per Trip])<=20) THEN FALSE ELSE TRUE END`
 Continuous? | Identify whether a trip departure has continuous prediction coverage, or if there is a gap in predictions (at least 20 seconds without getting a new prediction record associated with the trip departure) | Boolean | `IF([Departure Advance Notice >= Min. Advance Notice]=TRUE AND [Continuous Coverage Between Advance Notice > Min. Advance Notice and Advance Notice <= Min. Advance Notice Predictions]=FALSE) THEN FALSE ELSEIF([Departure Advance Notice >= Min. Advance Notice]=TRUE AND [Continuous Coverage Between Advance Notice > Min. Advance Notice and Advance Notice <= Min. Advance Notice Predictions]=TRUE AND [Prediction Gaps with Min. Advance Notice?]=FALSE) THEN TRUE ELSEIF([Departure Advance Notice >= Min. Advance Notice]=FALSE AND [Continuous Coverage Between Advance Notice > Min. Advance Notice and Advance Notice <= Min. Advance Notice Predictions]=TRUE AND [Prediction Gaps with Min. Advance Notice?]=FALSE AND [Gap Between Earliest Prediction Generated and Min Advance Notice]=FALSE) THEN TRUE ELSEIF([Departure Advance Notice >= Min. Advance Notice]=TRUE AND [Continuous Coverage Between Advance Notice > Min. Advance Notice and Advance Notice <= Min. Advance Notice Predictions]=TRUE AND [Prediction Gaps with Min. Advance Notice?]=TRUE) THEN FALSE ELSE FALSE END`
-False Positive Departure | Identify whether a trip is a false positive departure, likely as the result of a bad AVI read | String | `IF(({ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX(IF([Number of Cars]=2 AND ([Vehicle Consist]=[Prior Vehicle Consist] OR [Vehicle Consist Backwards]=[Prior Vehicle Consist]) AND ([Vehicle Consist]!=[Next Vehicle Consist] OR [Vehicle Consist Backwards]!=[Next Vehicle Consist])) THEN 1 ELSEIF([Number of Cars]=2 AND ([Vehicle Consist]!=[Prior Vehicle Consist] OR [Vehicle Consist Backwards]!=[Prior Vehicle Consist]) AND ([Vehicle Consist]=[Next Vehicle Consist] OR [Vehicle Consist Backwards]=[Next Vehicle Consist])) THEN 0 ELSEIF ([Number of Cars]=1 AND [Gap from Prior Terminal Departure with Same Consist]<5) THEN (IF (CONTAINS([Prior Vehicle Consist],[Vehicle Consist]) and CONTAINS([Trip ID],'ADDED') and [# Predictions per Departure]=0)         THEN 1 ELSEIF ((NOT CONTAINS([Prior Vehicle Consist],[Vehicle Consist]) AND CONTAINS([Vehicle Consist Before Prior],[Vehicle Consist])) and CONTAINS([Trip ID],'ADDED') and [# Predictions per Departure]=0)         THEN 1 ELSEIF (CONTAINS([Prior Vehicle Consist],[Vehicle Consist]) and (NOT CONTAINS([Trip ID],'ADDED') and NOT CONTAINS([Prior Trip ID],'ADDED')) and [# Predictions per Departure]=0)         THEN 1 ELSEIF ((NOT CONTAINS([Prior Vehicle Consist],[Vehicle Consist]) AND CONTAINS([Vehicle Consist Before Prior],[Vehicle Consist])) and (NOT CONTAINS([Trip ID],'ADDED') and NOT CONTAINS([Trip ID Before Prior],'ADDED')) and [# Predictions per Departure]=0)  THEN 1 ELSE 0 END ) ELSEIF ([Number of Cars]=1 AND [Gap to Next Terminal Departure with Same Consist]<5) THEN (IF (CONTAINS([Next Vehicle Consist],[Vehicle Consist]) and CONTAINS([Trip ID],'ADDED') and [# Predictions per Departure]=0)   THEN 1  elseif (((NOT CONTAINS([Next Vehicle Consist],[Vehicle Consist]) AND CONTAINS([Vehicle Consist After Next],[Vehicle Consist])) and CONTAINS([Trip ID],'ADDED') and [# Predictions per Departure]=0))   THEN 1 elseif (CONTAINS([Next Vehicle Consist],[Vehicle Consist]) and (NOT CONTAINS([Trip ID],'ADDED') AND NOT CONTAINS([Next Trip ID],'ADDED')) and [# Predictions per Departure]=0) THEN 1 elseif ((NOT CONTAINS([Next Vehicle Consist],[Vehicle Consist]) AND CONTAINS([Vehicle Consist After Next],[Vehicle Consist])) and (NOT CONTAINS([Trip ID],'ADDED') AND NOT CONTAINS([Trip ID After Next],'ADDED')) and [# Predictions per Departure]=0) THEN 1 else 0 end) ELSEIF ([Gap from Prior Terminal Departure with Same Consist]>5 AND [Gap to Next Terminal Departure with Same Consist]>5) THEN 0 ELSE 0 END)})=1) THEN "False Positive" else "" END`
+Next Departure Time With Matching Consist | The departure time of the trip departure within the next two departures with a vehicle consist matching or containing the current trip departure's vehicle consist | Date & Time | `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: max(IF (CONTAINS([Next Vehicle Consist],[Vehicle Consist])) THEN [Next Departure Time] ELSEIF (CONTAINS([Vehicle Consist After Next],[Vehicle Consist])) THEN [Departure Time After Next] else null end)}`
+Prior Departure Time With Matching Consist | The departure time of the trip departure within the last two departures with a vehicle consist matching or containing the current trip departure's vehicle consist | Date & Time | `{ FIXED [VehiclePositions Unique Daily Trip Identifier]: max(IF (CONTAINS([Prior Vehicle Consist],[Vehicle Consist])) THEN [Prior Departure Time] ELSEIF (CONTAINS([Vehicle Consist Before Prior],[Vehicle Consist])) THEN [Departure Time Before Prior] else null end)}`
+Gap to Next Terminal Departure with Matching Consist | The amount of time in seconds between the time the trip departure time and the next trip departure time with a matching vehicle consist | Number (whole) | `ABS({ FIXED [VehiclePositions Unique Daily Trip Identifier]:MAX(DATEDIFF('minute',[Departure Time],[Next Departure Time With Matching Consist]))})`
+Gap from Prior Terminal Departure with Matching Consist | The amount of time in seconds between the time the trip departure time and the prior trip departure time with a matching vehicle consist | Number (whole) | `ABS({ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX(DATEDIFF('minute',[Prior Departure Time With Consist Fixed],[Departure Time]))})`
+False Positive Departure | Identify whether a trip is a false positive departure, likely as the result of a bad AVI read | String | `IF(({ FIXED [VehiclePositions Unique Daily Trip Identifier]: MAX(IF([Gap to Next Terminal Departure with Matching Consist]<5) then (IF(CONTAINS([Next Vehicle Consist],[Vehicle Consist]) and [Number of Cars]=1 and [Number of Next Cars]=2) then 1 ELSEIF(CONTAINS([Vehicle Consist After Next],[Vehicle Consist]) and [Number of Cars]=1 and [Number of Cars After Next]=2) then 1 ELSEIF(CONTAINS([Vehicle Consist],[Next Vehicle Consist]) and [Number of Cars]=2 and [Number of Next Cars]=1) then 0 ELSEIF(CONTAINS([Vehicle Consist],[Vehicle Consist After Next]) and [Number of Cars]=2 and [Number of Cars After Next]=1) then 0 ELSEIF([Vehicle Consist]=[Next Vehicle Consist] OR [Vehicle Consist Backwards]=[Next Vehicle Consist]) then (IF(CONTAINS([Trip ID],"ADDED") and NOT CONTAINS([Next Trip ID],"ADDED")) then 1 ELSEIF(NOT CONTAINS([Trip ID],"ADDED") and CONTAINS([Next Trip ID],"ADDED")) then 0 ELSEIF((CONTAINS([Trip ID],"ADDED") and CONTAINS([Next Trip ID],"ADDED")) or (NOT CONTAINS([Trip ID],"ADDED") and NOT CONTAINS([Next Trip ID],"ADDED"))) THEN (IF(([# Predictions per Departure]=0 and [# Predictions per Next Departure]=0) OR ([# Predictions per Departure]!=0 and [# Predictions per Next Departure]!=0)) THEN 1 ELSEIF([# Predictions per Departure]!=0 and [# Predictions per Next Departure]=0) THEN 0 ELSEIF([# Predictions per Departure]=0 and [# Predictions per Next Departure]!=0) THEN 1 END) END) ELSEIF([Vehicle Consist]=[Vehicle Consist After Next] OR [Vehicle Consist Backwards]=[Vehicle Consist After Next]) then ( IF(CONTAINS([Trip ID],"ADDED") and NOT CONTAINS([Trip ID After Next],"ADDED")) then 1 ELSEIF(NOT CONTAINS([Trip ID],"ADDED") and CONTAINS([Trip ID After Next],"ADDED")) then 0 ELSEIF((CONTAINS([Trip ID],"ADDED") and CONTAINS([Trip ID After Next],"ADDED")) or (NOT CONTAINS([Trip ID],"ADDED") and NOT CONTAINS([Trip ID After Next],"ADDED"))) THEN (IF(([# Predictions per Departure]=0 and [# Predictions per Departure After Next]=0) OR ([# Predictions per Departure]!=0 and [# Predictions per Departure After Next]!=0)) THEN 1 ELSEIF([# Predictions per Departure]!=0 and [# Predictions per Departure After Next]=0) THEN 0 ELSEIF([# Predictions per Departure]=0 and [# Predictions per Departure After Next]!=0) THEN 1 END) END) ELSE 0 END ) ELSEIF([Gap from Prior Terminal Departure with Matching Consist]<5) then (IF(CONTAINS([Vehicle Consist],[Prior Vehicle Consist]) and [Number of Cars]=2 and [Number of Prior Cars]=1) then 0 ELSEIF(CONTAINS([Vehicle Consist],[Vehicle Consist Before Prior]) and [Number of Cars]=2 and [Number of Cars Before Prior]=1) then 0 ELSEIF(CONTAINS([Prior Vehicle Consist],[Vehicle Consist]) and [Number of Cars]=1 and [Number of Prior Cars]=2) then 1 ELSEIF(CONTAINS([Vehicle Consist Before Prior],[Vehicle Consist]) and [Number of Cars]=1 and [Number of Cars Before Prior]=2) then 1 ELSEIF([Vehicle Consist]=[Prior Vehicle Consist] OR [Vehicle Consist Backwards]=[Prior Vehicle Consist]) then (IF(NOT CONTAINS([Trip ID],"ADDED") and CONTAINS([Prior Trip ID],"ADDED")) then 0 ELSEIF(CONTAINS([Trip ID],"ADDED") and NOT CONTAINS([Prior Trip ID],"ADDED")) then 1 ELSEIF((CONTAINS([Trip ID],"ADDED") and CONTAINS([Prior Trip ID],"ADDED")) or (NOT CONTAINS([Trip ID],"ADDED") and NOT CONTAINS([Prior Trip ID],"ADDED"))) THEN (IF(([# Predictions per Departure]=0 and [# Predictions per Prior Departure]=0) OR ([# Predictions per Departure]!=0 and [# Predictions per Prior Departure]!=0)) THEN 0 ELSEIF([# Predictions per Departure]=0 and [# Predictions per Prior Departure]!=0) THEN 1 ELSEIF([# Predictions per Departure]!=0 and [# Predictions per Prior Departure]=0) THEN 0 END) END) ELSEIF([Vehicle Consist]=[Vehicle Consist Before Prior] OR [Vehicle Consist Backwards]=[Vehicle Consist Before Prior]) then (IF(NOT CONTAINS([Trip ID],"ADDED") and CONTAINS([Trip ID Before Prior],"ADDED")) then 0 ELSEIF(CONTAINS([Trip ID],"ADDED") and NOT CONTAINS([Trip ID Before Prior],"ADDED")) then 1 ELSEIF((CONTAINS([Trip ID],"ADDED") and CONTAINS([Trip ID Before Prior],"ADDED")) or (NOT CONTAINS([Trip ID],"ADDED") and NOT CONTAINS([Trip ID Before Prior],"ADDED"))) THEN (IF(([# Predictions per Departure]=0 and [# Predictions per Departure Before Prior]=0) OR ([# Predictions per Departure]!=0 and [# Predictions per Departure Before Prior]!=0)) THEN 0 ELSEIF([# Predictions per Departure]=0 and [# Predictions per Departure Before Prior]!=0) THEN 1 ELSEIF([# Predictions per Departure]!=0 and [# Predictions per Departure Before Prior]=0) THEN 0 END) END) ELSE 0 END) ELSE 0 END)=1) THEN "False Positive" else "" END`
 
-### Data Filters
-`Prediction Generated after Terminal Departure`=FALSE
-`Next Prediction Generated after Terminal Departure`=FALSE
+---
+
+## Glides Trip Updates Table
+Data Source: `LAMP_ALL_Glides_trip_updates`
+
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+Glides/Trip Id | The Trip ID or Glides ID assigned to the trip departure | String | `IF(ISNULL([data.tripUpdates.tripKey.tripId])) THEN STR([data.tripUpdates.tripKey.glidesId]) ELSEIF(ISNULL([data.tripUpdates.tripKey.glidesId])) THEN STR([data.tripUpdates.tripKey.tripId]) ELSEIF(ISNULL([data.tripUpdates.tripKey.glidesId]) AND ISNULL([data.tripUpdates.tripKey.tripId])) THEN NULL END`
+Glides Unique Daily Trip Id | Field to uniquely identify the Glides trip departure based on trip service date and Glides/Trip ID | String | `str([data.tripUpdates.tripKey.serviceDate])  + " " +  str([Glides/Trip Id])`
+Initial Cars Update Time | The first time that the Glides vehicle consist was updated for the trip departure | Date & Time | `({ FIXED [Glides Unique Daily Trip Id]: MIN( IF NOT ISNULL([data.tripUpdates.cars]) and CONTAINS([data.tripUpdates.cars],'label') THEN [time] end) } )`
+UI Version | The Glides UI application version used by the user who updated the Glides vehicle consist first for the trip departure | String | `{FIXED [Glides Unique Daily Trip Id]: MIN(if [time] = [Initial Cars Update Time] then [data.metadata.uiVersion] END )}`
+Final Number of Cars per Trip | The number of cars in the final vehicle assignment for a trip departure | Number (whole) | `{fixed [Glides Unique Daily Trip Id]: min(if [time] = (({ FIXED [Glides Unique Daily Trip Id]: MAX( IF NOT ISNULL([data.tripUpdates.cars]) THEN [time] end) } )) then ((LEN([data.tripUpdates.cars])-LEN(REPLACE([data.tripUpdates.cars], '}, {', "")))/LEN('}, {')+1) END )}`
+Car1 Final Trip Vehicle Assignment | The final vehicle assignment of the 1st car for a trip departure | String | `{fixed [Glides Unique Daily Trip Id]: min(if [time] = (({ FIXED [Glides Unique Daily Trip Id]: MAX( IF NOT ISNULL((IF(REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=TRUE THEN (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END) ELSEIF (REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=FALSE THEN (IF (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END)='none' then "none" ELSE NULL end) END)) THEN [time] end) } )) then (IF(REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=TRUE THEN (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END) ELSEIF (REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=FALSE THEN (IF (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 1 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "[{'label': '",-1), 4) ELSE NULL END)='none' then "none" ELSE NULL end) END) END )}`
+Car2 Final Trip Vehicle Assignment | The final vehicle assignment of the 2nd car for a trip departure | String | `{fixed [Glides Unique Daily Trip Id]: min(if [time] = ({ FIXED [Glides Unique Daily Trip Id]: MAX( IF NOT ISNULL((IF(REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=TRUE THEN (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END) ELSEIF (REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=FALSE THEN ( IF (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END)='none' then "none" ELSE NULL end) END)) THEN [time] end) } ) then (IF(REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=TRUE THEN (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END) ELSEIF (REGEXP_MATCH((IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END),'^[0-9]*$'))=FALSE THEN (IF (IF CONTAINS((TRIM( SPLIT( [data.tripUpdates.cars], "}, {", 2 ) )),"label") THEN LEFT(split([data.tripUpdates.cars], "{'label': '",-1), 4) ELSE NULL END)='none' then "none" ELSE NULL end) END) END )}`
+Glides Consist | Final Glides vehicle assignment for the trip departure | String | `IF(CONTAINS((IF ([Final Number of Cars per Trip]=2) THEN [Car1 Final Trip Vehicle Assignment] +"-"+ [Car2 Final Trip Vehicle Assignment] ELSEIF([Final Number of Cars per Trip]=1) THEN [Car1 Final Trip Vehicle Assignment] ELSE NULL END),"none") OR ISNULL([Vehicle Consist Base])) THEN "Invalid" ELSE (IF ([Final Number of Cars per Trip]=2) THEN [Car1 Final Trip Vehicle Assignment] +"-"+ [Car2 Final Trip Vehicle Assignment] ELSEIF([Final Number of Cars per Trip]=1) THEN [Car1 Final Trip Vehicle Assignment] ELSE NULL END) END`
+
+---
+
+## Joined Data Table
+- Left join the joined VehiclePositions and Glides Trip Updates table on `VehiclePositions Unique Daily Trip Identifier`=`Glides Unique Daily Trip Id`
+
+### Custom Calculations
+Field Name | Description | Type | Query |
+--- | --- | --- |  --- |
+ADE | Amount of time in minutes between the first time that the Glides vehicle consist was updated and the departure time for a trip. If there was no Glides consist entry for a trip, return -999. | Number (whole) | `IF ISNULL(DATEDIFF('minute',[Initial Cars Update Time],[Departure Time])) THEN -999 ELSE DATEDIFF('minute',[Initial Cars Update Time],[Departure Time]) END`
+\# Departures with Consist Entry | The total number of terminal departures with Glides vehicle consist entry | Number (whole) | `COUNTD(IF NOT ISNULL([Initial Cars Update Time]) THEN [VehiclePositions Unique Daily Trip Identifier] ELSE NULL END)`
+% Departures with Consist Entry | Percentage of departures with Glides vehicle consist entry out of the total number of departures | Number (decimal) | `ZN([# Departures with Consist Entry]/[# Departures])`
+\# Departures with Desired ADE | The total number of terminal departures with a Glides vehicle consist entered at least Min. ADE Parameter minutes prior to the trip departure time | Number (whole) | `COUNTD(IF([ADE]>=[Min. ADE Parameter]) THEN [VehiclePositions Unique Daily Trip Identifier] ELSE NULL END)`
+% Departures with Desired ADE | Percentage of departures with a Glides vehicle consist entered at least Min. ADE Parameter minutes prior to the trip departure time out of the total number of departures | Number (decimal) | `ZN([# Departures with Desired ADE]/[# Departures])`
+\# Departures with Matching RTR and Glides Consists | The total number of terminal departures where the final Glides vehicle consist entry matches with the VehiclePositions Vehicle Consist | Number (whole) | `COUNTD(IF ([Vehicle Consist]=[Glides Consist] OR [Vehicle Consist Backwards]=[Glides Consist]) THEN [VehiclePositions Unique Daily Trip Identifier] ELSE NULL END)`
+% Departures with Matching RTR and Glides Consists | Percentage of departures where the final Glides vehicle consist entry matches with the VehiclePositions Vehicle Consist out of the total number of departures | Number (decimal) | `ZN([# Departures with Matching RTR and Glides Consists]/[# Departures])`
+
+---
 
 ### Parameters
 Field Name | Description | Type | Default Value |
 --- | --- | --- |  --- |
 Min. Advance Notice (minutes) | Minimum advance notice value in minutes |  Number (whole) | 0
+Min. ADE Parameter | Minimum number of minutes that a vehicle consist was entered into Glides prior to the departure | Number (whole) | 5
 Single or Multi-Day? | Allows the user the configure whether the report data should be for single service date or span multiple days | String | Single Day
 Single Day Service Date Parameter | If Single Day is selected, allows the user to set which service date the report should look at | Date | `[Latest Data Date]`
 Multi-Day Start Service Date Parameter | If Multi-Day is selected, allows the user to set which day the report service date range should start with | Date | `[2 Weeks Ago from Latest Data Date]`
