@@ -125,10 +125,10 @@ be new RFCs, with a note added to the original RFC. Exactly what counts as a
 
 The editors who can approve an RFC are:
 
-- Paul Swartz (Deputy CIO)
 - Julie Davis (Senior Director of Enginering)
 - Ian Westcott (Director of Platform Engineering)
 - Matt Shanley (Director of Engineering)
+- Paul Swartz (Deputy CIO)
 
 ## Reviewing RFCs
 
