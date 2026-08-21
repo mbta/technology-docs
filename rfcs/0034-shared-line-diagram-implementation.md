@@ -30,7 +30,7 @@ app.
   constraints that existed at the time it was built, and does not
   reflect a desire to preserve the current behavior exactly.
 - Dotcom likely does not have the bandwidth to re-implement the mobile
-  app's alorithm. This is discussed more in [the alternatives
+  app's algorithm. This is discussed more in [the alternatives
   section][alternatives].
 - If the Dotcom team does not reuse the mobile app's implementation,
   then they have to spend time re-making decisions and re-weighing
