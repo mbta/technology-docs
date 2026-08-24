@@ -42,6 +42,7 @@ app.
     information across different touchpoints, we would prefer that
     data is displayed in the same way, unless there is a reason to
     display it differently.
+- The Alerts Modernization team would be interested in using line diagrams to help users visualize detours and diversions. A shared line diagram library written in Elixir would save them considerable development time for this feature.
 
 [line-diagram-page]: https://www.mbta.com/schedules/CR-Franklin/line
 
