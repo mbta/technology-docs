@@ -2,7 +2,7 @@
 - Start Date: 2026-08-20
 - RFC PR: [mbta/technology-docs#34](https://github.com/mbta/technology-docs/pull/34)
 - Asana task: [Write and Share RFC for Mobile App / Dotcom Route Branching Algorithm](https://app.asana.com/1/15492006741476/project/555089885850811/task/1217718594921914?focus=true)
-- Status: Proposed
+- Status: Accepted
 
 # Summary
 [summary]: #summary
