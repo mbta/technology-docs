@@ -17,7 +17,7 @@ When there are no predictions for a subway route but service is running, we want
 We have scoped this Library to support the following goals for its launch:
 - Provide one common mechanism for all Rider Tools applications to obtain service headway information for subway, light rail, and the Silver Line, so riders see consistent values regardless of channel.
 - Replace the current need for OIOs to manually enter headway values with an automated, schedule-derived calculation.
-- Headway values available by stop/platform and direction, with multiple branches of the same line serving multiple platforms within a parent station consolidated into a single range.
+- Headway values available by stop/platform and direction. At stops serving multiple destinations in the same direction, we show a combined headway ("Southbound trains every lo-hi min"), **unless** the touchpoint is specific to a platform that serves a single destination, like the Ashmont and Braintree platforms at JFK/UMass, in which case we show that destination's headway ("Ashmont trains every lo-hi min").
 - Leave room for future route-specific headways without redesigning the data contract now.
 
 Although the following are not goals for launch, this design *could* be extended to support the following in the future:
@@ -43,19 +43,50 @@ Headways.start_link(config)
 # Only one refresh runs at a time. If a refresh (manual or scheduled) is requested while one is already in progress, it won't be queued since schedule data rarely changes.
 Headways.refresh()
 
-# This type represents headway returned by the data accessing functions below
+
+# Lookup types for fetching headway ranges from the cache
+# Child platforms do not require explicit direction or route.
+# For parent stations, we must explicitly select direction and normalized route.
+@type query ::
+        %{stop_id: String.t()}
+        | %{
+            parent_stop_id: String.t(),
+            direction_id: 0 | 1,
+            route_id: String.t()
+          }
+
+# Tuple representing the low and high range of headways for a given lookup
 @type range :: {low :: pos_integer(), high :: pos_integer()}
 
-# Returns a single headway range.
-# By default, returns the range for the current time.
-@spec get(stop_id, direction_id, route_id, opts) :: {:ok, range()} | {:stale, range()} {:error, reason}
-Headways.get(stop_id, direction_id, route_id)
-Headways.get(stop_id, direction_id, route_id, time: time)
+# Returns a single headway range. By default, returns the range for the current time.
+@spec get(query()) :: {:ok, range()} | {:stale, range()} | {:error, reason}
+@spec get(query(), opts) :: {:ok, range()} | {:stale, range()} | {:error, reason}
+Headways.get(%{stop_id: stop_id})
+Headways.get(%{stop_id: stop_id}, time: time)
+Headways.get(%{parent_stop_id: parent_stop_id, direction_id: direction_id, route_id: route_id})
+Headways.get(%{parent_stop_id: parent_stop_id, direction_id: direction_id, route_id: route_id}, time: time)
 
 # If a consumer needs a per-route breakdown, we can have the following
-@spec get_all(stop_id, direction_id, opts) :: {:ok, %{route_id => range()}} | {:stale, %{route_id => range()}} | {:error, reason}
-Headways.get_all(stop_id, direction_id)
+@spec get_all(parent_stop_id, direction_id, opts) :: {:ok, %{route_id => range()}} | {:stale, %{route_id => range()}} | {:error, reason}
+Headways.get_all(parent_stop_id, direction_id)
 
+```
+
+#### Parent stations and platforms
+
+The `get(query, opts \\ [])` function accepts a typed query map with two supported shapes that both resolve to the same internal cache lookup and return the same result type. 
+
+- **Child platform:** `%{stop_id: stop_id}` infers direction and normalized route from the platform's schedule metadata. The range is calculated only from departures at that platform. Use this for touchpoints tied to a specific platform, such as PA/ESS screens.
+- **Parent station:** `%{parent_stop_id: parent_stop_id, direction_id: direction_id, route_id: route_id}` calculates the range from departures for the selected normalized route in that direction across the station's platforms. Use this for touchpoints that describe the whole station.
+
+For example, at JFK/UMass the southbound Ashmont and Braintree branches use separate platforms. You could look up both the parent station and either of its child platforms:
+
+```elixir
+Headways.get(%{parent_stop_id: "place-jfk", direction_id: 0, route_id: "Red"})
+#=> {:ok, {4, 7}}
+
+Headways.get(%{stop_id: "70085"})
+#=> {:ok, {8, 13}}
 ```
 
 #### Failure handling and staleness
@@ -72,9 +103,11 @@ We will use ETS for request-time lookup, and store a range of headway values for
 
 For the Green Line, we will consolidate each true route (Green-B, Green-C, Green-D, and Green-E) into a single representative “Green” since we won’t support branching headways. 
 
-A key for the ETS cache would be a tuple of `{stop_id, direction_id}`. The value it contains would then be a list, which can contain multiple entries for different routes. We are proposing the `parent_stop_id` as the `stop_id` used for lookup of values. If we wanted to provide flexibility to consumers, we could have an option on startup of the library to use a single `child_stop_id` as a key for the ETS table. This would be reasonable to create flexibility for within the library, and could allow for easier integration with applications that would prefer to do lookups by `child_stop_id`. 
+A key for the ETS cache would be a tuple of `{stop_id, direction_id}` in the case of parent stations, or just the `stop_id` when looking up child platform IDs. The value for each key is a list, which can contain multiple entries for different routes and time windows.
+
+Because platform assignments come from the published schedule, any platform served by a single destination (such as the Ashmont and Braintree platforms at JFK/UMass) automatically gets a destination-specific range, without special-casing particular stations. If the schedule routes multiple destinations to the same platform, its range reflects all of them.
     
-Note that in the example below, we include two time windows for the “Red” route id. to demonstrate how it may look when we are about to cross between time windows and have pre-emptively calculated and stored headways for the next window.
+The example below shows the value for the key `{"place-pktrm", 0}`. It includes two time windows for the “Red” route ID to demonstrate how it may look when we are about to cross between time windows and have pre-emptively calculated and stored headways for the next window.
     
 ```elixir
 [
@@ -135,10 +168,10 @@ How much data would we need to store headway all the discussed headway data in a
 
 Let’s do some quick math!
 
-- **143 active station/route combinations** (excluding branching routes,)
+- **143 active station/route combinations** (excluding branching routes and the ~10 child platforms we will store)
 - **2 directions** per station/route (excluding terminals, but let’s leave them in to round up)
 - In JSON, each entry is about ~300 bytes. In decoded Erlang, accounting for nested maps, integers, etc., the size increases. If we’re being pessimistic, we can estimate an increase to around **1.5 KB per entry**.
-- **For a given time window,** we thus are only storing **450KB for all entries (rounded up).**
+- **For a given time window,** we thus are only storing **450KB for parent station entries (rounded up).**
 
 Even if we assume that we’ll be storing multiple time windows at once (which may be necessary if the website wants to show more representative instead of current headways), keeping 10 would increase this to only 4.5MB. Accounting generously for an indexing structure, this ETS table would still be storing less than 10MB.
 
@@ -244,7 +277,7 @@ On Dotcom, there is a potential use case for showing individual branches of the 
 
 Instead of only having the consolidated `route_id` of "Green" for trunk stops on the Green Line, we could include specific `route_id` values that are calculated and populated for each branch available at the stop. This would be simple to support. 
 
-What we would need a data structure change to support would be branches for the Red Line, where the underlying `route_id` is the same but destination differs. This does not seem like a need from any consumers at this point, so supporting Green Line branches as discussed should work.  
+Red Line branches that use separate platforms (such as at JFK/UMass) are already supported through platform-level lookups. What would need a data structure change is separating branches that share a platform, where the underlying `route_id` and platform are the same but the destination differs. This does not seem like a need from any consumers at this point, so supporting Green Line branches as discussed should work.  
 
 ### Representative Headway Values
 
@@ -338,7 +371,7 @@ sequenceDiagram
     S3-->>Poller: latest_snapshot.json
     Poller->>Cache: write updated headways and clear past headways
   end
-  Req->>Cache: get(stop_id, direction_id, time)
+  Req->>Cache: get(query, time: time)
   Cache-->>Req: headway range
 ```
 
