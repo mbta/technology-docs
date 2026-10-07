@@ -160,7 +160,7 @@ defp headways(schedule_list, date, time) do
 end
 ```
 
-We will want to calculate these headways on some regular cadence that is matched between apps. A good cadence for this calculation could be every 2 hours on the 45 minute mark to guarantee that we have fresh values before a new time window begins.
+We will want to calculate these headways on some regular cadence that is matched between apps. Headways will only need to change when there is an update to existing or new schedules entirely published. We can check if this is the case by fetching from the V3 API's `status` endpoint. If this status indicates that new Schedule data has been published, then we fully fetch schedules from the API and recalculate headways. A good cadence for this check and subsequent calculation could be every 2 hours on the 45 minute mark to guarantee that we have fresh values before a new time window begins.
 
 ### Data Storage Details
 
@@ -224,6 +224,19 @@ We are not choosing this approach because it would require significant API owner
 
 This would be the right direction only if we expected a broader set of shared platform concerns, including centralized overrides, cross-channel timing control, or operational management that only a service layer can provide. For this RFC, those requirements are not sufficient to justify the added complexity.
 
+## Reading GTFS Static Directly
+
+The library could download and parse the GTFS static feed directly instead of requesting schedules from the V3 API. This approach would avoid depending on the API for schedule retrieval and could be a good fit if schedule processing were centralized in a preprocessing job or moved into the V3 API itself.
+
+### Why start with the V3 API?
+
+For the initial implementation, the V3 API is the lower-risk and more practical choice:
+
+- The library initially needs schedules for subway, light rail, and the Silver Line. The static feed includes schedules for the entire system; most of the data in `stop_times.txt` is for bus service that is out of scope. The current `stop_times.txt` is approximately 150 MB, while the V3 API can return schedules filtered to the routes and time periods the library needs. Since each application instance runs its own copy of the library, downloading and parsing the full static feed in every consumer could add avoidable network, CPU, and peak-memory costs.
+- Most Rider Tools teams, particularly the Screens team who will do the initial implementation, already have deep experience working with the V3 API and its schedule data. Reusing that path should shorten implementation and onboarding, help deliver the feature sooner, and make it easier to maintain.
+
+If schedule ingestion is later centralized in a hybrid architecture or the V3 API, we can reconsider parsing GTFS and relatively easily swap between the two ways of fetching relevant schedule data.
+
 ## Hybrid Approach
 
 A Hybrid approach would preprocess headway data, write it to a shared store, and then use a shared ingestion library in each Rider Tools app to fetch and cache the dataset locally. This would give us many of the benefits of a centralized system without making each application depend on a live runtime API. It would keep reads cheap and cacheable, and it would allow for consistent results and extensibility with overrides.
@@ -244,7 +257,7 @@ An earlier design discussion raised a relevant question based on the recently ac
 
 In the headways case, schedule fetching and parsing makes sense to live inside the library for a few reasons:
 
-1. The headways cache will update and fetch schedules infrequently, roughly once per hour, and without a latency requirement. These V3 API calls should therefore live outside each application’s normal V3 caching flow, rather than being mixed into a consumer’s existing cache of API responses.
+1. The headways cache will update and fetch schedules infrequently, checking for updates to schedules every 2 hours, and without a latency requirement. These V3 API calls should therefore live outside each application’s normal V3 caching flow, rather than being mixed into a consumer’s existing cache of API responses.
 2. Headway updates run on a scheduled refresh cadence, unlike the line map diagram use case. That makes it simpler to keep the fetch/update lifecycle inside the library itself, rather than requiring applications to call an `update` function and pass schedule data in manually.
 3. Consumers would not need to build adapters to transform their `Schedule` structs into the format required by the library.
 4. Centralizing schedule fetching reduces the risk of small discrepancies when fetching the same data across consumers, which could otherwise lead to different headway calculations between applications.
