@@ -18,12 +18,11 @@ We have scoped this Library to support the following goals for its launch:
 - Provide one common mechanism for all Rider Tools applications to obtain service headway information for subway, light rail, and the Silver Line, so riders see consistent values regardless of channel.
 - Replace the current need for OIOs to manually enter headway values with an automated, schedule-derived calculation.
 - Headway values available by stop/platform and direction. At stops serving multiple destinations in the same direction, we show a combined headway ("Southbound trains every lo-hi min"), **unless** the touchpoint is specific to a platform that serves a single destination, like the Ashmont and Braintree platforms at JFK/UMass, in which case we show that destination's headway ("Ashmont trains every lo-hi min").
-- Leave room for future route-specific headways without redesigning the data contract now.
+- Support both combined Green Line headways and separate headways for individual branches at shared stops. For example, Dotcom will be able to show D Branch headways on the Green Line D Branch departures page at Copley.
 
 Although the following are not goals for launch, this design *could* be extended to support the following in the future:
  - Support headway value overrides, without making manual entry the normal workflow.
  - Fallback values in the case of missing or corrupted data for a given query.
- - Separate headways for branches of the Green Line at stops that serve multiple destinations.
  - Share logic for when headways should be shown. Given that we want to show headways when predictions are unavailable, we can trust consumers to handle this piece for when it's an option. However, we also could share logic for when headways should *not* be shown. When service is not normal and we know headways will be inaccurate, we may want a mechanism to prevent headways from being shown to riders.
 
 # Proposal
@@ -35,7 +34,8 @@ We would create the following APIs within the `Headways` module:
 
 ```elixir
 # Will need to pass information on accessing the V3 API to the library on startup
-# Creates the ETS table and returns immediately; the initial schedule fetch and calculation happen in the background. Until the first load completes, {:error, :not_loaded} is returned on get attempts.
+# Will also need to pass the routes and child platforms for which headways should be stored.
+# Will create the ETS table and return immediately; the initial schedule fetch and calculation will happen in the background. Until the first load completes, get attempts will return {:error, :not_loaded}.
 # A failure to reach the V3 API will never prevent the consumer application from starting.
 Headways.start_link(config)
 
@@ -74,6 +74,34 @@ Headways.get_all(parent_stop_id, direction_id)
 
 ```
 
+#### Startup configuration
+
+Consumers will pass `routes` and optional `platform_ids` to `Headways.start_link`, along with their V3 API configuration. This will allow each application to fetch and store headways for its own use cases, without needing separate options for including branches or platforms.
+
+- **`routes`:** The route IDs for which the library will calculate headways at parent stations, in each direction. Consumers that want combined Green Line headways will pass `"Green"`, while consumers that want individual branches will pass `"Green-B"`, `"Green-C"`, `"Green-D"`, and `"Green-E"`. A consumer will be able to request both the combined route and individual branches.
+- **`platform_ids`:** The child stop IDs for which the library will calculate platform-specific headways. This list will be optional and will default to `[]`. The library will infer the direction and routes serving each requested platform from the schedule, even if those routes were not included in `routes`.
+
+For example, the `realtime_signs` application, which will need combined Green Line headways and the separate southbound platforms at JFK/UMass, could start the library with:
+
+```elixir
+Headways.start_link(
+  routes: ["Red", "Orange", "Blue", "Green", "Silver"],
+  platform_ids: [ashmont_platform_id, braintree_platform_id]
+)
+```
+
+A consumer needing individual Green Line branches and an overview at turnk stops could instead pass:
+
+```elixir
+Headways.start_link(
+  routes: ["Red", "Orange", "Blue", "Green", "Silver", "Green-B", "Green-C", "Green-D", "Green-E"]
+  )
+```
+
+`"Green"` will describe the combined headway we want to store, rather than a literal route filter for the V3 API. The library will fetch the relevant branch schedules and merge their departures for that calculation. When a consumer requests both combined and branch-specific headways, the library will reuse the same fetched schedules rather than fetch them separately for each calculation.
+
+Lookups outside the configured routes or platforms will return `{:error, :unsupported_query}`, so consumers will be able to distinguish an unconfigured lookup from a failure to load schedule data. 
+
 #### Parent stations and platforms
 
 The `get(query, opts \\ [])` function accepts a typed query map with two supported shapes that both resolve to the same internal cache lookup and return the same result type. 
@@ -81,7 +109,7 @@ The `get(query, opts \\ [])` function accepts a typed query map with two support
 - **Child platform:** `%{stop_id: stop_id}` infers direction and normalized route from the platform's schedule metadata. The range is calculated only from departures at that platform. Use this for touchpoints tied to a specific platform, such as PA/ESS screens.
 - **Parent station:** `%{parent_stop_id: parent_stop_id, direction_id: direction_id, route_id: route_id}` calculates the range from departures for the selected normalized route in that direction across the station's platforms. Use this for touchpoints that describe the whole station.
 
-For example, at JFK/UMass the southbound Ashmont and Braintree branches use separate platforms. You could look up both the parent station and either of its child platforms:
+For example, at JFK/UMass the southbound Ashmont and Braintree branches use separate platforms. A consumer configured to store headways for `"Red"` and the child platform IDs will be able to look up both the parent station and either of its child platforms:
 
 ```elixir
 Headways.get(%{parent_stop_id: "place-jfk", direction_id: 0, route_id: "Red"})
@@ -90,6 +118,8 @@ Headways.get(%{parent_stop_id: "place-jfk", direction_id: 0, route_id: "Red"})
 Headways.get(%{stop_id: "70085"})
 #=> {:ok, {8, 13}}
 ```
+
+Both Red Line destinations use the same `route_id`, so platform-specific lookups will provide their separate headways without introducing new route IDs. Separating destinations that share both a route ID and a platform would require another selector and will remain outside initial launch scope.
 
 #### Failure handling and staleness
 
@@ -121,11 +151,11 @@ The library will emit `:telemetry` events for refresh success, failure, retry, a
 
 We will use ETS for request-time lookup, and store a range of headway values for each stop/direction/route combination. We will store headway ranges for a 2-hour time window, and store the upcoming time window in ETS as well to guarantee consistency between consumers as we advance between time ranges. We will progressively add values for the next time windows and delete expired windows once they are no longer eligible for bounded stale fallback. Cache generations also retain schedule-version metadata and known no-service or insufficient-departure results, so a lookup can distinguish missing coverage from a valid schedule without a calculable range.
 
-For the Green Line, we will consolidate each true route (Green-B, Green-C, Green-D, and Green-E) into a single representative “Green” since we won’t support branching headways. 
+For the Green Line, we will store entries for the combined `"Green"` route, individual branches, or both, depending on the consumer's `routes` configuration. We will calculate combined headways from merged scheduled departures, not by combining the headway ranges calculated for individual branches.
 
 A key for the ETS cache would be a tuple of `{stop_id, direction_id}` in the case of parent stations, or just the `stop_id` when looking up child platform IDs. The value for each key is a list, which can contain multiple entries for different routes and time windows.
 
-Because platform assignments come from the published schedule, any platform served by a single destination (such as the Ashmont and Braintree platforms at JFK/UMass) automatically gets a destination-specific range, without special-casing particular stations. If the schedule routes multiple destinations to the same platform, its range reflects all of them.
+We will store parent station entries for the requested routes and child platform entries for the requested `platform_ids`. Because platform assignments will come from the published schedule, any requested platform served by a single destination (such as the Ashmont and Braintree platforms at JFK/UMass) will get a destination-specific range, without special-casing particular stations. If the schedule routes multiple destinations to the same platform, its range will reflect all of them.
     
 The example below shows the value for the key `{"place-pktrm", 0}`. It includes two time windows for the “Red” route ID to demonstrate how it may look when we are about to cross between time windows and have pre-emptively calculated and stored headways for the next window.
     
@@ -158,8 +188,8 @@ The example below shows the value for the key `{"place-pktrm", 0}`. It includes 
 We will generally be going with the approach outlined during earlier experimentation done before this RFC ([see Notion](https://app.notion.com/p/mbta-downtown-crossing/First-Pass-at-Headways-2e1f5d8d11ea80839400fb6a1c1caaef?source=copy_link)). The calculation logic within the library will do the following:
 
 1. Read the published schedule using the V3 API for a 2 hour time window. Note that the time windows will extend beyond 2 hours for the start and end of service. Within a service day, these time windows will be service_start-7AM, 7AM-9AM, 9AM-11AM, 11AM-1PM, 1PM-3PM, 3PM-5PM, 5-7PM, 7PM-9PM, 9PM-11PM, and 11PM-service_end.
-2. Normalize records by platform stop_id, direction, and normalized route.
-3. Merge scheduled departures from all qualifying routes serving that platform/direction.
+2. Group records by stop/platform, direction, and route, retaining the original Green Line branch IDs.
+3. Select and merge scheduled departures for each configured parent station route or child platform. For combined `"Green"` entries, merge departures from the qualifying branches; for individual branch entries, use only departures from that branch.
 4. Compute intervals between the departure time of consecutive departures.
 5. Summarize intervals within defined time windows into a rider-facing range. Set a minimum floor value of 1 or 2 minutes.
 6. Publish results as effective periods rather than recalculating per request.
@@ -188,12 +218,12 @@ How much data would we need to store headway all the discussed headway data in a
 
 Let’s do some quick math!
 
-- **143 active station/route combinations** (excluding branching routes and the ~10 child platforms we will store)
+- **143 active station/route combinations** as a baseline (excluding individual Green Line branch entries and configured child platforms)
 - **2 directions** per station/route (excluding terminals, but let’s leave them in to round up)
 - In JSON, each entry is about ~300 bytes. In decoded Erlang, accounting for nested maps, integers, etc., the size increases. If we’re being pessimistic, we can estimate an increase to around **1.5 KB per entry**.
 - **For a given time window,** we thus are only storing **450KB for parent station entries (rounded up).**
 
-Even if we assume that we’ll be storing multiple time windows at once (which may be necessary if the website wants to show more representative instead of current headways), keeping 10 would increase this to only 4.5MB. Accounting generously for an indexing structure, this ETS table would still be storing less than 10MB.
+Even if we assume that we’ll be storing amounting to a full day of time windows at once to minimize the risk of stale date, that would increase this baseline to only 4.5MB. Requested branch and platform entries will add to this estimate, and the actual cache size will depend on each consumer's configuration. 
 
 In conclusion, storing all headway data in ETS should be quite manageable.
 
@@ -306,14 +336,6 @@ For this RFC, though, we are choosing the more centralized library-owned fetch p
 
 ## Extensions within a Shared Library
 [extensions-within-a-shared-library]: #extensions-within-a-shared-library
-
-### Headways for Green Line Branches at Trunk Stops
-
-On Dotcom, there is a potential use case for showing individual branches of the Green Line, even at shared stations. For example, on the Green Line D Branch departures page at Copley, it would be a bit odd to show all-Green-Line headways.
-
-Instead of only having the consolidated `route_id` of "Green" for trunk stops on the Green Line, we could include specific `route_id` values that are calculated and populated for each branch available at the stop. This would be simple to support. 
-
-Red Line branches that use separate platforms (such as at JFK/UMass) are already supported through platform-level lookups. What would need a data structure change is separating branches that share a platform, where the underlying `route_id` and platform are the same but the destination differs. This does not seem like a need from any consumers at this point, so supporting Green Line branches as discussed should work.  
 
 ### Representative Headway Values
 
