@@ -43,6 +43,8 @@ Headways.start_link(config)
 # Only one refresh runs at a time. If a refresh (manual or scheduled) is requested while one is already in progress, it won't be queued since schedule data rarely changes.
 Headways.refresh()
 
+# Inspect load state, refresh health, schedule versions, and cache coverage.
+Headways.status()
 
 # Lookup types for fetching headway ranges from the cache
 # Child platforms do not require explicit direction or route.
@@ -90,16 +92,34 @@ Headways.get(%{stop_id: "70085"})
 ```
 
 #### Failure handling and staleness
-If a scheduled refresh fails, the library keeps serving existing cached data and retries at the next scheduled refresh. Because headways are schedule-derived and calculated per fixed time window, data for a window remains valid even if later refreshes fail.
 
-If no data exists for the requested window, the library  falls back to the most recent prior window and returns `{:stale, range}`, allowing consumers to decide whether to display it. 
+Because the library owns fetching, it also owns retrying failed request and reporting degraded availability. Consumers should not need to implement their own retry loops or make schedule requests when a lookup fails.
 
-The library emits `:telemetry` events for refresh success and failure so consumers can log and alert on repeated failures.
+##### Startup and refresh isolation
+
+Startup creates an empty cache and starts the initial load in the background. Until a complete dataset has been published, lookups return `{:error, :not_loaded}`. Network failures never block application startup, and lookups never wait for a fetch or trigger one themselves. Fetching and calculation will run in a supervised background worker, separate from the cache owner. A worker crash or timeout leaves the active cache intact and is reported as a failed refresh. Only one refresh or retry sequence runs at a time, including manual refreshes, and additional requests are added to a queue.
+
+##### Retries
+ Connection failures, timeouts, HTTP 429 responses, and HTTP 5xx responses receive bounded retries with exponential backoff and jitter. For 429 responses, the library will adhere to `Retry-After`. Other HTTP 4xx responses, invalid response data, and calculation failures end the attempt without immediate retries. If we use the alotted retry alottment, the library will keep its last known good cache and try again on the next scheduled refresh. Timeout and retry defaults are an implementation detail to be configured during library creation.
+
+##### Lookup results and stale-data limits
+
+The following policy applies to both `get` and `get_all`:
+
+- `{:ok, value}` means the cache contains a calculated range for the requested effective window and the library has not detected a newer schedule version awaiting publication. A failed refresh alone does not invalidate an otherwise applicable range, although it means schedule changes may be undetected.
+- `{:stale, value}` means the range belongs to a superseded schedule version or, when the requested window is missing because of a failed refresh, an earlier window. Consumers can explicitly choose whether to display this result.
+- `{:error, :not_loaded}` means no initial dataset has been published.
+
+Stale fallback will be bounded by a library-level maximum age, measured from the effective window's end for prior-window fallback or from detection of a superseding version. As an example, during implementation, we may determine that either of going back to a previous day's headways for the same time or instead a window within the same service day proves most accurate. Consumers may suppress stale results but should not extend the library's limit.
+
+##### Observability
+
+The library will emit `:telemetry` events for refresh success, failure, retry, and skipped status checks where no update is needed. Metadata will include the failure stage and category, retry count, schedule version, and refresh duration, without API credentials or full response bodies. It could also expose a lightweight `Headways.status()` snapshot containing load state, whether a refresh is running, the last successful publication time, applied and pending schedule versions, consecutive failures, and cache coverage. Consumers will need to own logging and alerting, particularly for failed initial loads, repeated failures, and coverage approaching exhaustion.
 
 ### ETS Cache Design
 [ets-cache-design]: #ets-cache-design
 
-We will use ETS for request-time lookup, and store a range of headway values for each stop/direction/route combination. We will store headway ranges for a 2-hour time window, and store the upcoming time window in ETS as well to guarantee consistency between consumers as we advance between time ranges. We will progressively delete expired time windows from the cache as we move past them and add values for the next time windows.
+We will use ETS for request-time lookup, and store a range of headway values for each stop/direction/route combination. We will store headway ranges for a 2-hour time window, and store the upcoming time window in ETS as well to guarantee consistency between consumers as we advance between time ranges. We will progressively add values for the next time windows and delete expired windows once they are no longer eligible for bounded stale fallback. Cache generations also retain schedule-version metadata and known no-service or insufficient-departure results, so a lookup can distinguish missing coverage from a valid schedule without a calculable range.
 
 For the Green Line, we will consolidate each true route (Green-B, Green-C, Green-D, and Green-E) into a single representative “Green” since we won’t support branching headways. 
 
@@ -160,7 +180,7 @@ defp headways(schedule_list, date, time) do
 end
 ```
 
-We will want to calculate these headways on some regular cadence that is matched between apps. Headways will only need to change when there is an update to existing or new schedules entirely published. We can check if this is the case by fetching from the V3 API's `status` endpoint. If this status indicates that new Schedule data has been published, then we fully fetch schedules from the API and recalculate headways. A good cadence for this check and subsequent calculation could be every 2 hours on the 45 minute mark to guarantee that we have fresh values before a new time window begins.
+We will want to calculate these headways on some regular cadence that is matched between apps. We can check for changes to published schedules by fetching from the V3 API's `status` endpoint. If this status indicates that new Schedule data has been published, then we fully fetch schedules from the API and recalculate headways. An initial load or missing upcoming cache coverage also requires fetching and calculation, even if the published version is unchanged. A good cadence for this check and subsequent calculation could be every 2 hours on the 45 minute mark to prepare values before a new time window begins. The failure-handling policy above applies to both status checks and schedule fetches; this cadence does not guarantee availability during an outage.
 
 ### Data Storage Details
 
@@ -202,6 +222,8 @@ Headways.Test.clear()
 ```
 
 Alternatively, `Headways` could expose a behaviour for consumers to swap in a mock with `Mox` instead of the real module.
+
+The library's own tests will use an injectable HTTP client and a mocked timer mechanism to exercise failure and recovery deterministically, without live API calls or real retry delays.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -271,10 +293,11 @@ For this RFC, though, we are choosing the more centralized library-owned fetch p
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
   - Can we align on having the Schedule fetching be handled by the Library?
+  - What shared maximum stale age should the library enforce before returning `{:error, :unavailable}`?
 - What parts of the design do you expect to resolve through the implementation of this feature
   - Will the Screens team own the Library after its release?
   - Is 1 minute a reasonable lower bound for headways, or should the minimum floor be 2 minutes?
-  - At what point is headway data too stale to be displayed to riders? Should this be configured by application, or set to a standard value in the library?
+  - What connection timeout, response timeout, overall refresh deadline, and retry budget keep refresh work bounded within consumer applications?
   - How much of an impact do outliers have on the headway calculation for less frequent routes, such as GL and RL branches? Will we need to shorten the headway range windows to percentiles at a certain length of time threshold?
 
 
