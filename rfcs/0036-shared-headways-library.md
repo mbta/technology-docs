@@ -246,15 +246,13 @@ In conclusion, storing all headway data in ETS should be quite manageable.
 
 ### Implementation and Rollout Plan
 
-We propose creating the initial library within the Screens application. Since we will potentially be making many small tweaks after the initial rollout, we can do this within Screens for speed and simplicity. Once we feel confident that the Headway algorithm and library is relatively stable, we can pull it out to an individual library.
-
+1. Create a Headways repo in Github for the Shared Libary.
 1. Define and approve the calculation and consolidation policy against representative subway,  light-rail, and Silver Line examples. 
-2. Define the normalized schedule and coverage contract, implement the pure calculation and snapshot lookup APIs.
-3. Add a Screens-owned schedule provider using its existing API infrastructure. Implement the optional managed runtime's refresh coordination, provider integration, and ETS caching for use by Screens.
-4. Run new calculation in shadow mode against Screens' existing manual values to report differences.
-5. Migrate to fully use the new library within the Screens application.
-6. Once we’re confident and the library is stable, move the library to a different repository, `Headways`, where it will live on its own.
-7. Migrate the other Rider Tools applications, Realtime Signs, Dotcom, and MBTA Go. Each application may adopt the managed runtime with its own provider or use the pure API with its existing storage and lifecycle.
+1. Define the normalized schedule and coverage contract, implement the pure calculation and snapshot lookup APIs.
+1. Add a Screens-owned schedule provider using its existing API infrastructure. Implement the optional managed runtime's refresh coordination, provider integration, and ETS caching for use by Screens.
+1. Run new calculation in shadow mode against Screens' existing manual values to report differences.
+1. Migrate to fully use the new library within the Screens application.
+1. Migrate the other Rider Tools applications: Realtime Signs, Dotcom, and MBTA Go. Each application may adopt the managed runtime with its own provider or use the pure API with its existing storage and lifecycle.
 
 ### Testing
 [testing]: #testing
