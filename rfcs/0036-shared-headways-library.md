@@ -31,34 +31,27 @@ The library will separate calculation policy from the schedule retrieval and sto
 
 #### Pure calculation and lookup
 
-Consumers will pass normalized schedules and their coverage metadata to `Headways.calculate/2`. The result will be a snapshot containing headway entries with effective start and end times, configured query coverage, known no-service or insufficient-departure results, and source metadata. Calculation will not fetch data, start processes, or read the current clock implicitly.
+Consumers will parse their source data into a list of schedule records and pass that list to `Headways.calculate_day/2` or `Headways.calculate_window/2`. `calculate_day/2` will calculate every effective window represented for the service day while `calculate_window/2` will calculate one explicit time window. The functions will not accept query knobs or require coverage metadata, but instead derive result keys from the supplied schedules' stop/platform, direction, and route fields. Consumers will own parsing and normalization, while the library will validate that the supplied schedules are compatible (for example, schedules with different `direction_id` values will produce a validation failure). This separation of concerns will allow consumers to calculate headways for either a specific branch (i.e. Green-B) or for multiple branches on the same line by filtering their schedule data passed to the library differently. The result will be a snapshot containing headway entries with effective start and end times and known no-service or insufficient-departure results. Calculation will not fetch data, start processes, or read the current clock implicitly.
 
 ```elixir
-# Calculate every effective window for a service day for any GL train at Park Street in both directions.
-Headways.calculate(schedule_data,
-  service_date: service_date,
-  routes: ["Green-B", "Green-C", "Green-D", "Green-E"],
-  stop_id: "place-pktrm"
-)
+# Calculate every effective window represented in the parsed schedule list.
+Headways.calculate_day(schedules, service_day)
 #=> {:ok, snapshot} | {:error, reason}
 
-# Calculate only the library-defined effective window containing this time.
-Headways.calculate(schedule_data,
-  service_date: service_date,
-  time: time,
-  routes: ["Red"]
-)
+# Calculate one explicit effective time window from the parsed schedule list.
+Headways.calculate_window(schedules, time_window)
+#=> {:ok, snapshot} | {:error, reason}
 
 # Look up an entry in a previously calculated snapshot, without ETS or a process.
 Headways.lookup(snapshot, %{parent_stop_id: "place-jfk", direction_id: 0, route_id: "Red"}, time: time)
 #=> {:ok, {4, 7}} | {:error, reason}
 ```
 
-A consumer can calculate a full day's headways once, store the snapshot, and look up the applicable window on demand. Another can calculate a single window on demand and store the result however it prefers. In both cases, the library selects the same absolute effective windows; an on-demand calculation does not use a rolling two-hour window starting at request time. Consumers managing their own storage also own refresh scheduling, invalidation, and stale-data policy. Pure lookup only selects from the supplied snapshot; it cannot detect that newer schedules exist.
+A consumer will be able to calculate a full day's headways once, store the snapshot, and look up the applicable window on demand. Another will be able to calculate a single window on demand and store the result however it prefers. In both cases, the library will use the same absolute effective windows; an on-demand calculation will not use a rolling two-hour window starting at request time. Consumers managing their own storage will also own refresh scheduling, invalidation, and stale-data policy. Pure lookup will only select from the supplied snapshot; it will not detect that newer schedules exist.
 
 #### Optional managed runtime
 
-Consumers that want shared refresh scheduling and caching will configure a schedule-provider callback implemented within their application. The runtime will determine when data is needed and invoke the provider; the provider will retrieve schedules through the application's existing API client or schedule cache. The library does not take V3 API credentials or contain an HTTP client.
+Consumers that want shared refresh scheduling and caching will configure a schedule-provider callback implemented within their application. The runtime will determine when data is needed and invoke the provider; the provider will retrieve schedules through the application's existing API client or schedule cache. The library will not take V3 API credentials or contain an HTTP client.
 
 ```elixir
 # Configure a consumer-owned schedule provider.
@@ -101,18 +94,18 @@ Headways.get_all(parent_stop_id, direction_id)
 
 #### Startup configuration
 
-Consumers will pass a `schedule_provider` to `Headways.start_link`. The provider will be a consumer module implementing the shared behaviour, with any provider-specific options supplied by that application. The pure calculation API accepts the same route and platform without requiring a provider.
+Consumers will pass a `schedule_provider` to `Headways.start_link`. The provider will be a consumer module implementing the shared behaviour, with any provider-specific options supplied by that application. The pure calculation API will operate on parsed schedule lists without requiring a provider or route/platform query options.
 
 #### Schedule input and provider contract
 As in RFC 34, consumers will adapt their existing structs to a documented, simplified input format. The library will own validation and calculation, not application-specific API decoding. A schedule dataset will include:
 
 - Scheduled departures with trip ID, child stop ID, original route ID, direction ID, and timezone-aware departure time. Parent station IDs are required for station aggregation, either on each departure or in a separate mapping keyed by child stop ID. The exact input schema will be finalized during implementation.
-- The service date and explicit coverage: which routes, stations/platforms, and effective windows are complete. A full-day dataset must include the start and end of service, including departures after midnight belonging to that service day. Window-only datasets must cover the entire effective window, including the extended first or last window where applicable.
+- The service date and service-day association for departures, including departures after midnight. For the managed runtime, the provider will also report explicit coverage: which routes, stations/platforms, and effective windows are complete. Full-day data will include the start and end of service; window-only data will cover the entire effective window, including the extended first or last window where applicable.
 - Source metadata, including retrieval time and published schedule version when available. The provider must report the version actually represented by its data, not merely the latest version observed at the API.
 
 Consumers will configure the managed runtime with a schedule provider and provider-specific options, but will not pass route or platform IDs to Headways at startup. When schedules are needed, the runtime will request data for the relevant service dates and effective windows. The provider will decide which schedules to retrieve, using its own configuration and the consumer’s existing data sources.
 
-Headways will calculate and cache results for the coverage the provider supplies; it will not select routes or platforms to fetch. 
+Headways will calculate and cache results for the coverage the provider supplies; it will not select routes or platforms to fetch. The calculation functions will receive only the schedule list (and, for `calculate_window/2`, the explicit time window), not provider coverage or selection options.
 
 ```elixir
 @callback load(request :: %{service_dates: [Date.t()], windows: [window()]},
@@ -209,7 +202,7 @@ The example below shows the value for the key `{"place-pktrm", 0}`. It includes 
 
 We will generally be going with the approach outlined during earlier experimentation done before this RFC ([see Notion](https://app.notion.com/p/mbta-downtown-crossing/First-Pass-at-Headways-2e1f5d8d11ea80839400fb6a1c1caaef?source=copy_link)). The calculation logic within the library will do the following:
 
-1. Validate consumer-supplied schedules and coverage for the selected service day and effective windows. The library defines windows in `America/New_York`, anchored to the service day rather than application startup or request time. These windows will be service_start-7AM, 7AM-9AM, 9AM-11AM, 11AM-1PM, 1PM-3PM, 3PM-5PM, 5PM-7PM, 7PM-9PM, 9PM-11PM, and 11PM-service_end. The first and last windows may extend beyond two hours. Departures after midnight must retain their service-day association, and timezone-aware boundaries must account for daylight saving time.
+1. Validate consumer-supplied schedules and coverage for the selected service day or effective windows. The library defines windows in `America/New_York`, anchored to the service day rather than application startup or request time. These windows will be service_start-7AM, 7AM-9AM, 9AM-11AM, 11AM-1PM, 1PM-3PM, 3PM-5PM, 5PM-7PM, 7PM-9PM, 9PM-11PM, and 11PM-service_end. The first and last windows may extend beyond two hours. Departures after midnight must retain their service-day association, and timezone-aware boundaries must account for daylight saving time.
 2. Group records by stop/platform, direction, and route, retaining the original Green Line branch IDs.
 3. Select and merge scheduled departures for each configured parent station route or child platform. For combined `"Green"` entries, merge departures from the qualifying branches; for individual branch entries, use only departures from that branch.
 4. Compute intervals between the departure time of consecutive departures.
@@ -266,7 +259,7 @@ We propose creating the initial library within the Screens application. Since we
 ### Testing
 [testing]: #testing
 
-Pure calculation and lookup tests will pass fixed schedule datasets and explicit service dates and times, without any processes or network calls. Consumers using the managed runtime also need a way to run their test suites without live provider calls or time-dependent data. The library will support this by:
+Pure calculation and lookup tests will pass fixed parsed schedule lists and, for window calculations, an explicit time window, without any processes or network calls. Consumers using the managed runtime will also need a way to run their test suites without live provider calls or time-dependent data. The library will support this by:
 
 - A config option, such as `refresh: false`, that starts the ETS table without scheduling provider calls, so the runtime can stay in the consumer's supervision tree during tests.
 - An injectable schedule-provider behaviour, allowing tests to supply fixed datasets and simulate failures or version changes without an HTTP client.
@@ -279,7 +272,7 @@ Headways.Test.clear()
 
 Alternatively, `Headways` could expose a behaviour for consumers to swap in a mock with `Mox` instead of the real module.
 
-The library's own tests will use a fake provider and an injectable clock/timer mechanism to exercise startup, refresh deadlines, coalescing, atomic publication, stale limits, and recovery deterministically. They will verify that full-day and window-only calculation produce identical results for the same inputs, including service-day rollover, daylight saving transitions, window boundaries, incomplete coverage, no service, and insufficient departures. Provider integration tests in each consumer will verify API filtering, pagination, normalization, version metadata, and bounded transport retries. The library itself will not test consumer HTTP clients.
+The library's own tests will use a fake provider and an injectable clock/timer mechanism to exercise startup, refresh deadlines, coalescing, atomic publication, stale limits, and recovery deterministically. They will verify that `calculate_day/2` and `calculate_window/2` produce identical results for the same schedules and corresponding windows, including service-day rollover, daylight saving transitions, window boundaries, incomplete coverage, no service, insufficient departures, and invalid mixed-direction inputs. Provider integration tests in each consumer will verify API filtering, pagination, parsing, version metadata, and bounded transport retries. The library itself will not test consumer HTTP clients.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -320,7 +313,7 @@ The main existing prior work to extract common functionality into a shared libra
 ## V3 API Pattern from RFC 34
 The accepted RFC 34 proposes a shared route branching library whose consumers retrieve V3 API data and adapt it to simplified input structures. This proposal follows that BYOD pattern: consumers supply schedules, and the shared library owns the domain calculation rather than API credentials, HTTP clients, or application-specific schedule structs.
 
-Headways also benefit from shared refresh timing and caching, but those responsibilities do not require library-owned API access. The optional managed runtime invokes a consumer-owned provider when schedules are needed, then calculates and caches the results. This lets applications reuse their existing schedule retrieval and caching infrastructure without rebuilding refresh coordination. Applications that prefer their own lifecycle can instead precompute daily snapshots or calculate individual effective windows through the pure API.
+Headways will also benefit from shared refresh timing and caching, but those responsibilities will not require library-owned API access. The optional managed runtime will invoke a consumer-owned provider when schedules are needed, then calculate and cache the results. This will let applications reuse their existing schedule retrieval and caching infrastructure without rebuilding refresh coordination. Applications that prefer their own lifecycle will be able to precompute daily snapshots with `calculate_day/1` or calculate individual effective windows with `calculate_window/2`.
 
 The tradeoff is that consumers must supply adapters and honor the input coverage and freshness contract. `realtime_signs`, which does not currently fetch or cache schedules, will need to implement schedule fetching in its provider.
 
