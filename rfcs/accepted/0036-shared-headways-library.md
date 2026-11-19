@@ -115,9 +115,9 @@ Headways will calculate and cache results for the coverage the provider supplies
 
 This callback allows the library to coordinate refreshes without owning API access. A push-only API would not be sufficient, since the library would not be able to obtain fresh schedules when coverage expires. Consumers preferring to push data or manage their own lifecycle should use the pure API and their own storage.
 
-#### Parent stations and platforms
+#### Parent stations and platform lookups
 
-Lookups accept either a child platform or a parent station query. Pure snapshot lookup accepts the same shapes.
+Lookups of already calculated headway data using the managed runtime accept either a child platform or a parent station query. Pure snapshot lookup accepts the same shapes.
 
 - **Child platform:** `%{stop_id: stop_id}` infers direction and normalized route from the platform's schedule metadata. The range is calculated only from departures at that platform. Use this for touchpoints tied to a specific platform, such as PA/ESS screens.
 - **Parent station:** `%{parent_stop_id: parent_stop_id, direction_id: direction_id, route_ids: route_ids}` calculates the range from departures for the selected normalized route in that direction across the station's platforms. Use this for touchpoints that describe the whole station.
