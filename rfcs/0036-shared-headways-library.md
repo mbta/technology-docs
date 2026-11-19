@@ -254,6 +254,8 @@ In conclusion, storing all headway data in ETS should be quite manageable.
 1. Migrate to fully use the new library within the Screens application.
 1. Migrate the other Rider Tools applications: Realtime Signs, Dotcom, and MBTA Go. Each application may adopt the managed runtime with its own provider or use the pure API with its existing storage and lifecycle.
 
+Note that we could rollout Headways within other Rider Tools applications before or alongside Screens if they choose not to use the managed runtime. This approach will lead to inconsistencies between Screens and any app that does so first since Screens and RTS already show headways from the hardcoded data populated by OIOs in Signs UI, but could deliver value to riders more quickly.
+
 ### Testing
 [testing]: #testing
 
